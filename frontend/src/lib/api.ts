@@ -23,6 +23,10 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     throw new ApiError(response.status, body.message ?? "Request failed");
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 };
 
@@ -30,3 +34,5 @@ export const apiGet = <T>(path: string): Promise<T> => request<T>(path);
 
 export const apiPost = <T>(path: string, body: unknown): Promise<T> =>
   request<T>(path, { method: "POST", body: JSON.stringify(body) });
+
+export const apiDelete = <T>(path: string): Promise<T> => request<T>(path, { method: "DELETE" });
