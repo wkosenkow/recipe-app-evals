@@ -1,22 +1,26 @@
 import { useKitchenProfile } from "../context/KitchenProfileContext";
-import { DIET_OPTIONS, EQUIPMENT_OPTIONS, type DietRestriction, type SkillLevel, type UnitSystem } from "../types/kitchen";
+import { DIET_LABELS, EQUIPMENT_LABELS, type DietKey, type EquipmentKey, type SkillLevel, type UnitSystem } from "../types/kitchen";
 import TabBar from "../components/TabBar";
 
-const UNIT_OPTIONS: UnitSystem[] = ["metric", "imperial"];
-const SKILL_OPTIONS: SkillLevel[] = ["Beginner", "Intermediate", "Advanced"];
+const UNIT_OPTIONS: { value: UnitSystem; label: string }[] = [
+  { value: "metric", label: "Grams / ml" },
+  { value: "imperial", label: "Cups / oz" },
+];
+
+const SKILL_OPTIONS: { value: SkillLevel; label: string }[] = [
+  { value: "novice", label: "Beginner" },
+  { value: "experienced", label: "Experienced" },
+];
 
 function MyKitchenTab() {
   const { profile, updateProfile } = useKitchenProfile();
 
-  const toggleEquipment = (key: string) => {
+  const toggleEquipment = (key: EquipmentKey) => {
     updateProfile({ equipment: { ...profile.equipment, [key]: !profile.equipment[key] } });
   };
 
-  const toggleDiet = (diet: DietRestriction) => {
-    const next = profile.diet.includes(diet)
-      ? profile.diet.filter((d) => d !== diet)
-      : [...profile.diet, diet];
-    updateProfile({ diet: next });
+  const toggleDiet = (key: DietKey) => {
+    updateProfile({ diet: { ...profile.diet, [key]: !profile.diet[key] } });
   };
 
   return (
@@ -25,32 +29,58 @@ function MyKitchenTab() {
         <div className="text-xl font-semibold text-gray-100">My Kitchen</div>
 
         <section className="flex flex-col gap-2">
-          <div className="text-sm font-semibold text-gray-300">Servings</div>
-          <input
-            type="number"
-            min={1}
-            max={12}
-            value={profile.servings}
-            onChange={(e) => updateProfile({ servings: Math.max(1, Number(e.target.value) || 1) })}
-            className="w-24 rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100"
-          />
+          <div className="text-sm font-semibold text-gray-300">Equipment</div>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(EQUIPMENT_LABELS) as EquipmentKey[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleEquipment(key)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                  profile.equipment[key]
+                    ? "border-green-500/40 bg-green-500/15 text-green-400"
+                    : "border-gray-700 bg-gray-800 text-gray-400"
+                }`}
+              >
+                {EQUIPMENT_LABELS[key]}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <div className="text-sm font-semibold text-gray-300">Dietary restrictions</div>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(DIET_LABELS) as DietKey[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleDiet(key)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                  profile.diet[key]
+                    ? "border-red-500/40 bg-red-500/15 text-red-400"
+                    : "border-gray-700 bg-gray-800 text-gray-400"
+                }`}
+              >
+                {DIET_LABELS[key]}
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="flex flex-col gap-2">
           <div className="text-sm font-semibold text-gray-300">Units</div>
-          <div className="flex gap-2">
-            {UNIT_OPTIONS.map((unit) => (
+          <div className="inline-flex w-fit overflow-hidden rounded-md border border-gray-700">
+            {UNIT_OPTIONS.map((option) => (
               <button
-                key={unit}
+                key={option.value}
                 type="button"
-                onClick={() => updateProfile({ units: unit })}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${
-                  profile.units === unit
-                    ? "border-blue-500/40 bg-blue-500/15 text-blue-400"
-                    : "border-gray-700 bg-gray-800 text-gray-400"
+                onClick={() => updateProfile({ units: option.value })}
+                className={`px-3 py-2 text-xs font-semibold ${
+                  profile.units === option.value ? "bg-blue-500/15 text-blue-400" : "bg-gray-900 text-gray-400"
                 }`}
               >
-                {unit}
+                {option.label}
               </button>
             ))}
           </div>
@@ -58,61 +88,45 @@ function MyKitchenTab() {
 
         <section className="flex flex-col gap-2">
           <div className="text-sm font-semibold text-gray-300">Skill level</div>
-          <div className="flex gap-2">
-            {SKILL_OPTIONS.map((skill) => (
+          <div className="inline-flex w-fit overflow-hidden rounded-md border border-gray-700">
+            {SKILL_OPTIONS.map((option) => (
               <button
-                key={skill}
+                key={option.value}
                 type="button"
-                onClick={() => updateProfile({ skill })}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  profile.skill === skill
-                    ? "border-blue-500/40 bg-blue-500/15 text-blue-400"
-                    : "border-gray-700 bg-gray-800 text-gray-400"
+                onClick={() => updateProfile({ skill: option.value })}
+                className={`px-3 py-2 text-xs font-semibold ${
+                  profile.skill === option.value ? "bg-blue-500/15 text-blue-400" : "bg-gray-900 text-gray-400"
                 }`}
               >
-                {skill}
+                {option.label}
               </button>
             ))}
+          </div>
+          <div className="text-xs text-gray-500">
+            Beginners get more explanation of the "why" behind each step in chat.
           </div>
         </section>
 
         <section className="flex flex-col gap-2">
-          <div className="text-sm font-semibold text-gray-300">Equipment</div>
-          <div className="flex flex-wrap gap-2">
-            {EQUIPMENT_OPTIONS.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => toggleEquipment(item.key)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  profile.equipment[item.key]
-                    ? "border-green-500/40 bg-green-500/15 text-green-400"
-                    : "border-gray-700 bg-gray-800 text-gray-400"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="flex flex-col gap-2">
-          <div className="text-sm font-semibold text-gray-300">Diet restrictions</div>
-          <div className="flex flex-wrap gap-2">
-            {DIET_OPTIONS.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => toggleDiet(item.key)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  profile.diet.includes(item.key)
-                    ? "border-red-500/40 bg-red-500/15 text-red-400"
-                    : "border-gray-700 bg-gray-800 text-gray-400"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="text-sm font-semibold text-gray-300">Default servings</div>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => updateProfile({ servings: Math.max(1, profile.servings - 1) })}
+              aria-label="Decrease"
+              className="h-8 w-8 rounded-md border border-gray-700 bg-gray-900 text-sm text-gray-100"
+            >
+              −
+            </button>
+            <div className="min-w-[18px] text-center font-mono text-base text-gray-100">{profile.servings}</div>
+            <button
+              type="button"
+              onClick={() => updateProfile({ servings: Math.min(12, profile.servings + 1) })}
+              aria-label="Increase"
+              className="h-8 w-8 rounded-md border border-gray-700 bg-gray-900 text-sm text-gray-100"
+            >
+              +
+            </button>
           </div>
         </section>
       </div>

@@ -6,9 +6,9 @@ import type { KitchenProfile } from "../types/kitchen";
 const DEFAULT_PROFILE: KitchenProfile = {
   servings: 4,
   units: "metric",
-  skill: "Intermediate",
-  equipment: {},
-  diet: [],
+  skill: "novice",
+  equipment: { oven: false, blender: false, standMixer: false, slowCooker: false, grill: false },
+  diet: { veg: false, vegan: false, glutenFree: false, dairyFree: false, nutFree: false },
 };
 
 interface KitchenProfileContextValue {

@@ -1,24 +1,29 @@
 export type UnitSystem = "metric" | "imperial";
-export type SkillLevel = "Beginner" | "Intermediate" | "Advanced";
-export type DietRestriction = "vegetarian" | "vegan" | "gluten-free" | "dairy-free" | "nut-free";
+export type SkillLevel = "novice" | "experienced";
+
+export type EquipmentKey = "oven" | "blender" | "standMixer" | "slowCooker" | "grill";
+export type DietKey = "veg" | "vegan" | "glutenFree" | "dairyFree" | "nutFree";
 
 export interface KitchenProfile {
   servings: number;
   units: UnitSystem;
   skill: SkillLevel;
-  equipment: Record<string, boolean>;
-  diet: DietRestriction[];
+  equipment: Record<EquipmentKey, boolean>;
+  diet: Record<DietKey, boolean>;
 }
 
-export const EQUIPMENT_OPTIONS: { key: string; label: string }[] = [
-  { key: "blender", label: "Blender" },
-  { key: "oven", label: "Oven" },
-];
+export const EQUIPMENT_LABELS: Record<EquipmentKey, string> = {
+  oven: "Oven",
+  blender: "Blender",
+  standMixer: "Stand mixer",
+  slowCooker: "Slow cooker",
+  grill: "Grill",
+};
 
-export const DIET_OPTIONS: { key: DietRestriction; label: string }[] = [
-  { key: "vegetarian", label: "Vegetarian" },
-  { key: "vegan", label: "Vegan" },
-  { key: "gluten-free", label: "Gluten-free" },
-  { key: "dairy-free", label: "Dairy-free" },
-  { key: "nut-free", label: "Nut-free" },
-];
+export const DIET_LABELS: Record<DietKey, string> = {
+  veg: "Vegetarian",
+  vegan: "Vegan",
+  glutenFree: "Gluten-free",
+  dairyFree: "Dairy-free",
+  nutFree: "Nut-free",
+};
