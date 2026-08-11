@@ -1,28 +1,63 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { useLocalStorage } from "../lib/use-local-storage";
+import { apiDelete, apiGet, apiPost } from "../lib/api";
+import { lookupMealById } from "../lib/mealdb";
+import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
+import { toIngredientList, type MealDBMeal } from "../types/mealdb";
+import type { Favorite } from "../types/favorite";
 
 interface FavoritesContextValue {
-  favorites: string[];
-  isFavorite: (recipeId: string) => boolean;
-  toggleFavorite: (recipeId: string) => void;
+  favorites: Favorite[];
+  loading: boolean;
+  error: string | null;
+  isFavorite: (mealId: string) => boolean;
+  toggleFavorite: (mealId: string, meal?: MealDBMeal) => Promise<void>;
 }
 
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useLocalStorage<string[]>("favorites", []);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiGet<{ favorites: Favorite[] }>("/api/favorites")
+      .then((data) => setFavorites(data.favorites))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed to load favorites"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const value = useMemo<FavoritesContextValue>(
     () => ({
       favorites,
-      isFavorite: (recipeId) => favorites.includes(recipeId),
-      toggleFavorite: (recipeId) =>
-        setFavorites((prev) =>
-          prev.includes(recipeId) ? prev.filter((id) => id !== recipeId) : [...prev, recipeId],
-        ),
+      loading,
+      error,
+      isFavorite: (mealId) => favorites.some((favorite) => favorite.mealId === mealId),
+      toggleFavorite: async (mealId, meal) => {
+        if (favorites.some((favorite) => favorite.mealId === mealId)) {
+          await apiDelete(`/api/favorites/${mealId}`);
+          setFavorites((prev) => prev.filter((favorite) => favorite.mealId !== mealId));
+          return;
+        }
+
+        const fullMeal = meal ?? (await lookupMealById(mealId));
+        if (!fullMeal) return;
+
+        const data = await apiPost<{ favorite: Favorite }>("/api/favorites", {
+          mealId,
+          title: fullMeal.strMeal,
+          cuisine: fullMeal.strArea,
+          thumbnail: fullMeal.strMealThumb,
+          ingredients: toIngredientList(fullMeal),
+          instructions: fullMeal.strInstructions,
+          enrichment: RECIPE_ENRICHMENT[mealId],
+        });
+
+        setFavorites((prev) => [data.favorite, ...prev]);
+      },
     }),
-    [favorites, setFavorites],
+    [favorites, loading, error],
   );
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
