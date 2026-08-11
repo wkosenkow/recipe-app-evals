@@ -4,9 +4,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useFavorites } from "../context/FavoritesContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { apiGet } from "../lib/api";
-import { missingEquipment } from "../lib/recipe-logic";
+import { buildInstructionsText, missingEquipment } from "../lib/recipe-logic";
 import TabBar from "../components/TabBar";
+import { EQUIPMENT_LABELS, type EquipmentKey } from "../types/kitchen";
 import type { Recipe } from "../types/recipe";
+
+interface ChatMessage {
+  role: "assistant" | "user";
+  text: string;
+}
 
 function RecipeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +24,7 @@ function RecipeDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCooking, setIsCooking] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -50,6 +57,11 @@ function RecipeDetail() {
     return <div className="p-4 text-sm text-red-500">{error ?? "Recipe not found"}</div>;
   }
 
+  const missing = missingEquipment(recipe, profile.equipment);
+  const missingLabels = missing.map((key) => EQUIPMENT_LABELS[key as EquipmentKey] ?? key);
+  const isReady = missing.length === 0;
+  const favorite = isFavorite(recipe._id);
+
   if (isCooking) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-950 p-4">
@@ -60,16 +72,19 @@ function RecipeDetail() {
         >
           ← Back to recipe
         </button>
-        <div className="text-sm text-gray-500">
-          Chat coming soon — this is where cooking {recipe.title} happens.
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className="max-w-[85%] self-start whitespace-pre-wrap rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm leading-relaxed text-gray-100"
+            >
+              {message.text}
+            </div>
+          ))}
         </div>
       </div>
     );
   }
-
-  const missing = missingEquipment(recipe, profile.equipment);
-  const isReady = missing.length === 0;
-  const favorite = isFavorite(recipe._id);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
@@ -113,12 +128,15 @@ function RecipeDetail() {
               : "border-red-500/40 bg-red-500/15 text-red-400"
           }`}
         >
-          {isReady ? "Ready with your kitchen" : `Missing ${missing.join(", ")}`}
+          {isReady ? "Ready with your kitchen" : `Missing ${missingLabels.join(", ")}`}
         </div>
 
         <button
           type="button"
-          onClick={() => setIsCooking(true)}
+          onClick={() => {
+            setMessages([{ role: "assistant", text: buildInstructionsText(recipe, profile) }]);
+            setIsCooking(true);
+          }}
           className="mt-2 rounded-md bg-blue-500 px-4 py-3 text-sm font-semibold text-white"
         >
           Cook

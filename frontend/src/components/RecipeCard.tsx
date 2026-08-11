@@ -1,3 +1,4 @@
+import { EQUIPMENT_LABELS, type EquipmentKey } from "../types/kitchen";
 import type { Recipe } from "../types/recipe";
 
 interface RecipeCardProps {
@@ -10,6 +11,7 @@ interface RecipeCardProps {
 
 function RecipeCard({ recipe, missingEquipment, isFavorite, onToggleFavorite, onOpen }: RecipeCardProps) {
   const isReady = missingEquipment.length === 0;
+  const missingLabels = missingEquipment.map((key) => EQUIPMENT_LABELS[key as EquipmentKey] ?? key);
 
   return (
     <div className="flex w-full items-start gap-3 rounded-md border border-gray-700 bg-gray-900 p-3">
@@ -21,7 +23,7 @@ function RecipeCard({ recipe, missingEquipment, isFavorite, onToggleFavorite, on
             {recipe.cuisine} · {recipe.time} min · {recipe.difficulty}
           </div>
           <span className={`text-xs font-semibold ${isReady ? "text-green-500" : "text-red-500"}`}>
-            {isReady ? "Ready with your kitchen" : `Missing ${missingEquipment.join(", ")}`}
+            {isReady ? "Ready with your kitchen" : `Missing ${missingLabels.join(", ")}`}
           </span>
         </div>
       </button>
