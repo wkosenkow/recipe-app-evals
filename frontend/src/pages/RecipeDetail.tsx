@@ -5,6 +5,7 @@ import { useFavorites } from "../context/FavoritesContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { lookupMealById } from "../lib/mealdb";
 import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
+import ChatView from "../components/ChatView";
 import TabBar from "../components/TabBar";
 import { EQUIPMENT_LABELS, type EquipmentKey } from "../types/kitchen";
 import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
@@ -58,6 +59,8 @@ function RecipeDetail() {
     return <div className="p-4 text-sm text-red-500">{error ?? "Recipe not found"}</div>;
   }
 
+  const enrichment = RECIPE_ENRICHMENT[meal.idMeal];
+
   if (view === "recipe") {
     return (
       <div className="flex min-h-screen flex-col bg-gray-950 p-4">
@@ -89,16 +92,24 @@ function RecipeDetail() {
 
   if (view === "cooking") {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-950 p-4">
+      <div className="flex h-screen flex-col bg-gray-950 p-4">
         <button type="button" onClick={() => setView("card")} className="mb-4 self-start text-sm text-gray-400">
           ← Back to recipe
         </button>
-        <div className="text-sm text-gray-500">Chat coming soon — this is where cooking {meal.strMeal} happens.</div>
+        <ChatView
+          recipe={{
+            title: meal.strMeal,
+            cuisine: meal.strArea,
+            ingredients: toIngredientList(meal),
+            instructions: meal.strInstructions,
+          }}
+          enrichment={enrichment}
+          kitchenProfile={profile}
+        />
       </div>
     );
   }
 
-  const enrichment = RECIPE_ENRICHMENT[meal.idMeal];
   const missing = enrichment?.equipment.filter((key) => !profile.equipment[key as EquipmentKey]) ?? null;
   const isReady = missing !== null && missing.length === 0;
   const favorite = isFavorite(meal.idMeal);

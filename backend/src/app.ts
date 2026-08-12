@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { chatRouter } from "./modules/chat/chat.routes.js";
 import { favoriteRouter } from "./modules/favorites/favorite.routes.js";
 
 export const app = express();
@@ -19,5 +20,6 @@ app.get("/api/health", (_request, response) => {
 });
 
 app.use("/api/favorites", favoriteRouter);
+app.use("/api/chat", chatRouter);
 
 app.use(errorHandler);

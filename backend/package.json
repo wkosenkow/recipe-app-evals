@@ -20,6 +20,7 @@
     "helmet": "^8.3.0",
     "mongoose": "^9.7.4",
     "morgan": "^1.11.0",
+    "ollama": "^0.6.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
