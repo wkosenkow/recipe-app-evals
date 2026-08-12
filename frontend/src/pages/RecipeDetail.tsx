@@ -7,7 +7,9 @@ import { lookupMealById } from "../lib/mealdb";
 import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
 import TabBar from "../components/TabBar";
 import { EQUIPMENT_LABELS, type EquipmentKey } from "../types/kitchen";
-import type { MealDBMeal } from "../types/mealdb";
+import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
+
+type ViewMode = "card" | "recipe" | "cooking";
 
 function RecipeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +20,7 @@ function RecipeDetail() {
   const [meal, setMeal] = useState<MealDBMeal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCooking, setIsCooking] = useState(false);
+  const [view, setView] = useState<ViewMode>("card");
 
   useEffect(() => {
     if (!id) return;
@@ -56,14 +58,39 @@ function RecipeDetail() {
     return <div className="p-4 text-sm text-red-500">{error ?? "Recipe not found"}</div>;
   }
 
-  if (isCooking) {
+  if (view === "recipe") {
     return (
       <div className="flex min-h-screen flex-col bg-gray-950 p-4">
-        <button
-          type="button"
-          onClick={() => setIsCooking(false)}
-          className="mb-4 self-start text-sm text-gray-400"
-        >
+        <button type="button" onClick={() => setView("card")} className="mb-4 self-start text-sm text-gray-400">
+          ← Back to recipe
+        </button>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+          <div className="text-lg font-semibold text-gray-100">{meal.strMeal}</div>
+
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ingredients</div>
+            <ul className="flex flex-col gap-1 text-sm text-gray-300">
+              {toIngredientList(meal).map((ingredient, index) => (
+                <li key={index}>
+                  {ingredient.measure} {ingredient.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Instructions</div>
+            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">{meal.strInstructions}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "cooking") {
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-950 p-4">
+        <button type="button" onClick={() => setView("card")} className="mb-4 self-start text-sm text-gray-400">
           ← Back to recipe
         </button>
         <div className="text-sm text-gray-500">Chat coming soon — this is where cooking {meal.strMeal} happens.</div>
@@ -75,6 +102,7 @@ function RecipeDetail() {
   const missing = enrichment?.equipment.filter((key) => !profile.equipment[key as EquipmentKey]) ?? null;
   const isReady = missing !== null && missing.length === 0;
   const favorite = isFavorite(meal.idMeal);
+  const tags = toTagList(meal);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
@@ -104,7 +132,40 @@ function RecipeDetail() {
           <span className="rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
             {meal.strCategory}
           </span>
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-purple-500/40 bg-purple-500/15 px-3 py-1 text-xs font-semibold text-purple-300"
+            >
+              {tag}
+            </span>
+          ))}
         </div>
+
+        {(meal.strYoutube || meal.strSource) && (
+          <div className="flex flex-wrap gap-4 text-xs">
+            {meal.strYoutube && (
+              <a
+                href={meal.strYoutube}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-blue-400 hover:underline"
+              >
+                ▶ Watch video
+              </a>
+            )}
+            {meal.strSource && (
+              <a
+                href={meal.strSource}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-blue-400 hover:underline"
+              >
+                ↗ View original recipe
+              </a>
+            )}
+          </div>
+        )}
 
         {missing !== null && (
           <div
@@ -120,13 +181,22 @@ function RecipeDetail() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => setIsCooking(true)}
-          className="mt-2 rounded-md bg-blue-500 px-4 py-3 text-sm font-semibold text-white"
-        >
-          Cook
-        </button>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setView("recipe")}
+            className="flex-1 rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200"
+          >
+            Recipe
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("cooking")}
+            className="flex-1 rounded-md bg-blue-500 px-4 py-3 text-sm font-semibold text-white"
+          >
+            Cook with AI
+          </button>
+        </div>
       </div>
 
       <TabBar />

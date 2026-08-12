@@ -8,6 +8,9 @@ export interface MealDBMeal extends MealDBSummary {
   strArea: string;
   strCategory: string;
   strInstructions: string;
+  strTags: string | null;
+  strYoutube: string | null;
+  strSource: string | null;
   strIngredient1: string | null;
   strIngredient2: string | null;
   strIngredient3: string | null;
@@ -54,6 +57,12 @@ export interface MealIngredient {
   name: string;
   measure: string;
 }
+
+export const toTagList = (meal: MealDBMeal): string[] =>
+  (meal.strTags ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 
 export const toIngredientList = (meal: MealDBMeal): MealIngredient[] => {
   const ingredients: MealIngredient[] = [];
