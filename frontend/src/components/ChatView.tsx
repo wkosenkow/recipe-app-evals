@@ -6,7 +6,10 @@ import type { KitchenProfile } from "../types/kitchen";
 
 const QUICK_PICKS = ["No dairy", "Fewer servings", "Different spices", "More detail, please"];
 
-const FALLBACK_REPLY = "Sorry, I couldn't reach the assistant just now. Try again in a moment.";
+// Kept out of `messages` on purpose. Rendering a failure as an assistant turn
+// would file it into the conversation and replay it to the model as something
+// it actually said.
+const ERROR_TEXT = "Couldn't reach the assistant just now.";
 
 interface ChatViewProps {
   recipe: ChatRecipe;
@@ -17,25 +20,32 @@ interface ChatViewProps {
 function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const started = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const requestOpening = () => {
+    setLoading(true);
+    setError(null);
+
+    sendChatMessage({ recipe, enrichment, kitchenProfile })
+      .then((reply) => setMessages([{ role: "assistant", text: reply }]))
+      .catch(() => setError(ERROR_TEXT))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
 
-    setLoading(true);
-    sendChatMessage({ recipe, enrichment, kitchenProfile })
-      .then((reply) => setMessages([{ role: "assistant", text: reply }]))
-      .catch(() => setMessages([{ role: "assistant", text: FALLBACK_REPLY }]))
-      .finally(() => setLoading(false));
+    requestOpening();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, error]);
 
   const send = (text: string) => {
     const trimmed = text.trim();
@@ -45,10 +55,20 @@ function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
     setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setInput("");
     setLoading(true);
+    setError(null);
 
     sendChatMessage({ recipe, enrichment, kitchenProfile, message: trimmed, history })
       .then((reply) => setMessages((prev) => [...prev, { role: "assistant", text: reply }]))
-      .catch(() => setMessages((prev) => [...prev, { role: "assistant", text: FALLBACK_REPLY }]))
+      .catch(() => {
+        // Roll the conversation back to before the send and hand the text back
+        // to the input. Leaving the user's turn in place would put a message
+        // into the history that the assistant never answered, which then gets
+        // replayed on the next request; this way retrying is just pressing Send
+        // again.
+        setMessages(history);
+        setInput(trimmed);
+        setError(ERROR_TEXT);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -73,6 +93,18 @@ function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
             <div className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-500">
               Thinking…
             </div>
+          </div>
+        )}
+        {error && (
+          <div role="alert" className="flex flex-col items-center gap-1 py-2 text-center text-sm text-red-400">
+            <span>{error}</span>
+            {messages.length === 0 ? (
+              <button type="button" onClick={requestOpening} className="font-semibold text-blue-400 hover:underline">
+                Try again
+              </button>
+            ) : (
+              <span className="text-xs text-gray-500">Your message is back in the box — send it again.</span>
+            )}
           </div>
         )}
         <div ref={bottomRef} />
