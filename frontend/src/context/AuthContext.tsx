@@ -19,9 +19,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useLocalStorage<AuthUser | null>("auth-user", null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
+  // Keep the module-level auth header in sync during render, not in an effect —
+  // child providers' effects (e.g. FavoritesContext) can fire before this component's
+  // own effects, so setting the token in useEffect risks a request going out unauthenticated.
+  setAuthToken(token);
 
   useEffect(() => {
     if (!token) {
