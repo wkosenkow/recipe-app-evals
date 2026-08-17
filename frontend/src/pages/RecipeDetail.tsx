@@ -122,6 +122,14 @@ function RecipeDetail() {
     toggleFavorite(meal.idMeal, meal);
   };
 
+  const handleCookWithAi = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    setView("cooking");
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
@@ -195,7 +203,7 @@ function RecipeDetail() {
           </button>
           <button
             type="button"
-            onClick={() => setView("cooking")}
+            onClick={handleCookWithAi}
             className="flex-1 rounded-md bg-blue-500 px-4 py-3 text-sm font-semibold text-white"
           >
             Cook with AI

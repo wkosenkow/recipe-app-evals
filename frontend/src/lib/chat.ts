@@ -23,6 +23,11 @@ interface SendChatMessageParams {
   history?: ChatMessage[];
 }
 
+// The whole history is replayed to the model every turn, so an unbounded
+// conversation means a prompt — and a bill — that grows with each message.
+// Keep the most recent turns; the backend enforces a hard ceiling of its own.
+const HISTORY_WINDOW = 20;
+
 export const sendChatMessage = ({
   recipe,
   enrichment,
@@ -30,6 +35,10 @@ export const sendChatMessage = ({
   message,
   history,
 }: SendChatMessageParams): Promise<string> =>
-  apiPost<{ reply: string }>("/api/chat", { recipe, enrichment, kitchenProfile, message, history }).then(
-    (data) => data.reply,
-  );
+  apiPost<{ reply: string }>("/api/chat", {
+    recipe,
+    enrichment,
+    kitchenProfile,
+    message,
+    history: history?.slice(-HISTORY_WINDOW),
+  }).then((data) => data.reply);
