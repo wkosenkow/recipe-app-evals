@@ -8,6 +8,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Must be set explicitly, not left to the localhost:5173 default: CORS now
+      # runs with credentials, so this value names an origin permitted to make
+      # authenticated cross-origin calls. It also drives the Secure flag
+      # indirectly via NODE_ENV, so production must look like production here.
+      - key: CLIENT_ORIGIN
+        value: https://kitchen-companion-hs8q.onrender.com
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET

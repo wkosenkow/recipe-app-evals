@@ -9,18 +9,15 @@ export class ApiError extends Error {
   }
 }
 
-let authToken: string | null = null;
-
-export const setAuthToken = (token: string | null): void => {
-  authToken = token;
-};
-
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
+    // The session lives in an httpOnly cookie, so it is deliberately unreachable
+    // from here — the browser attaches it and JS never sees it. Without this the
+    // cookie would be dropped on the cross-origin dev requests (:5173 → :3000).
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...init?.headers,
     },
   });

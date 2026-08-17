@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { verifyToken } from "../modules/auth/auth.utils.js";
+import { AUTH_COOKIE_NAME, verifyToken } from "../modules/auth/auth.utils.js";
 
 declare global {
   namespace Express {
@@ -11,20 +11,18 @@ declare global {
 }
 
 export const authenticate = (request: Request, response: Response, next: NextFunction): void => {
-  const header = request.headers.authorization;
+  const token = request.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
 
-  if (!header?.startsWith("Bearer ")) {
-    response.status(401).json({ message: "Missing or invalid authorization header" });
+  if (!token) {
+    response.status(401).json({ message: "Not authenticated" });
     return;
   }
-
-  const token = header.slice("Bearer ".length);
 
   try {
     const payload = verifyToken(token);
     request.userId = payload.sub;
     next();
   } catch {
-    response.status(401).json({ message: "Invalid or expired token" });
+    response.status(401).json({ message: "Invalid or expired session" });
   }
 };
