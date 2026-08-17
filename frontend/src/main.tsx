@@ -6,6 +6,11 @@ import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext'
 import { FavoritesProvider } from './context/FavoritesContext'
 import { KitchenProfileProvider } from './context/KitchenProfileContext'
+import { clearLegacyStorage } from './lib/clear-legacy-storage'
+
+// Before anything renders, so a leftover token is gone even if the first paint
+// throws.
+clearLegacyStorage()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -39,6 +39,7 @@ A few design decisions that aren't obvious from reading the code:
 | `GET` | `/api/health` | — | Liveness check |
 | `POST` | `/api/auth/register` | — | Create an account |
 | `POST` | `/api/auth/login` | — | Sign in |
+| `POST` | `/api/auth/logout` | — | Clear the session cookie |
 | `GET` | `/api/auth/me` | ✔ | Current user |
 | `GET` | `/api/favorites` | ✔ | List the user's favorites |
 | `POST` | `/api/favorites` | ✔ | Save a favorite |
