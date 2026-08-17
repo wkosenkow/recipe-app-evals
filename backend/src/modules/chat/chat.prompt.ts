@@ -1,6 +1,6 @@
 import type { ChatRequestBody } from "./chat.schemas.js";
 
-export interface OllamaChatMessage {
+export interface ChatPromptMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
@@ -84,8 +84,8 @@ const OPENING_TRIGGER =
   "and kitchen. Do not stop partway through or ask if I want you to continue — list every step through to " +
   "serving in this one message, then invite me to ask for changes.";
 
-export const buildChatMessages = (body: ChatRequestBody): OllamaChatMessage[] => {
-  const messages: OllamaChatMessage[] = [{ role: "system", content: buildSystemPrompt(body) }];
+export const buildChatMessages = (body: ChatRequestBody): ChatPromptMessage[] => {
+  const messages: ChatPromptMessage[] = [{ role: "system", content: buildSystemPrompt(body) }];
 
   for (const turn of body.history ?? []) {
     messages.push({ role: turn.role, content: turn.text });
