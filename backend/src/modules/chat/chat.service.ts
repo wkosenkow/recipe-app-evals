@@ -82,13 +82,3 @@ export const streamChatReply = (
   env.CHAT_PROVIDER === "anthropic"
     ? streamAnthropicReply(messages, signal)
     : streamOllamaReply(messages, signal);
-
-// Temporary: the controller still awaits a whole reply. Removed in the next
-// step, once it streams instead.
-export const getChatReply = async (messages: ChatPromptMessage[]): Promise<string> => {
-  let reply = "";
-  for await (const delta of streamChatReply(messages, new AbortController().signal)) {
-    reply += delta;
-  }
-  return reply;
-};
