@@ -13,24 +13,10 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   grill: "Grill",
 };
 
-const DIET_LABELS: Record<string, string> = {
-  veg: "Vegetarian",
-  vegan: "Vegan",
-  glutenFree: "Gluten-free",
-  dairyFree: "Dairy-free",
-  nutFree: "Nut-free",
-};
-
-const describeKitchen = (kitchenProfile: ChatRequestBody["kitchenProfile"]): string => {
-  const owned = Object.keys(kitchenProfile.equipment).filter((key) => kitchenProfile.equipment[key]);
-  const restrictions = Object.keys(kitchenProfile.diet).filter((key) => kitchenProfile.diet[key]);
-
-  return (
-    `units=${kitchenProfile.units}, skill level=${kitchenProfile.skill}, servings wanted=${kitchenProfile.servings}, ` +
-    `equipment on hand=${owned.map((key) => EQUIPMENT_LABELS[key] ?? key).join(", ") || "none listed"}, ` +
-    `dietary restrictions=${restrictions.map((key) => DIET_LABELS[key] ?? key).join(", ") || "none"}`
-  );
-};
+const describeKitchen = (kitchenProfile: ChatRequestBody["kitchenProfile"]): string =>
+  `units=${kitchenProfile.units}, skill level=${kitchenProfile.skill}, servings wanted=${kitchenProfile.servings}, ` +
+  `equipment on hand=${kitchenProfile.equipment.trim() || "none listed"}, ` +
+  `dietary restrictions=${kitchenProfile.diet.trim() || "none"}`;
 
 const describeRecipe = ({ recipe, enrichment }: ChatRequestBody): string => {
   const ingredientLines = recipe.ingredients.map((ing) => `${ing.measure} ${ing.name}`.trim()).join(", ");
@@ -61,15 +47,36 @@ const describeRecipe = ({ recipe, enrichment }: ChatRequestBody): string => {
   return lines.join("\n");
 };
 
-const buildSystemPrompt = (body: ChatRequestBody): string =>
-  "You are a friendly cooking assistant walking a home cook through a recipe step by step in chat. " +
-  "The conversation below is the full history so far — you already said whatever is attributed to you in it, " +
-  "so never restart or repeat steps you've already covered. If the cook says something like \"next\" or " +
-  "\"continue\", pick up exactly where your last message left off.\n" +
-  describeRecipe(body) +
-  "\n" +
-  `Cook's kitchen: ${describeKitchen(body.kitchenProfile)}.\n` +
-  "Keep replies well under 350 words.";
+const buildSystemPrompt = (body: ChatRequestBody): string => {
+  const { skill, units } = body.kitchenProfile;
+
+  const skillInstruction =
+    skill === "novice"
+      ? "The cook is a beginner — explain the reason (\"why\") behind each non-obvious step, not just the action."
+      : "The cook is experienced — keep steps terse, skip explaining basic technique.";
+
+  const unitsInstruction =
+    units === "imperial"
+      ? "Convert the recipe's ingredient quantities to US customary units (cups, oz, lb, tsp/tbsp) in your reply."
+      : "Convert the recipe's ingredient quantities to metric units (g, ml) in your reply.";
+
+  return (
+    "You are a friendly cooking assistant walking a home cook through a recipe step by step in chat. " +
+    "The conversation below is the full history so far — you already said whatever is attributed to you in it, " +
+    "so never restart or repeat steps you've already covered. If the cook says something like \"next\" or " +
+    "\"continue\", pick up exactly where your last message left off.\n" +
+    describeRecipe(body) +
+    "\n" +
+    `Cook's kitchen: ${describeKitchen(body.kitchenProfile)}.\n` +
+    `${skillInstruction} ${unitsInstruction} ` +
+    "The recipe source doesn't list how many servings its ingredient amounts make, so scaling toward the " +
+    "requested servings is approximate — say so rather than presenting the scaled amounts as exact. " +
+    "Actively cross-check the recipe's required equipment and ingredients against the cook's equipment and " +
+    "dietary restrictions above, and proactively flag anything that doesn't line up — a missing tool, a " +
+    "conflicting ingredient — rather than waiting to be asked.\n" +
+    "Keep replies well under 350 words."
+  );
+};
 
 const OPENING_TRIGGER =
   "Let's get started. Give me the full walkthrough now: the ingredients (call out anything relevant to my " +

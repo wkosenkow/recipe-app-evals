@@ -29,7 +29,6 @@ function FavoritesTab() {
               title={favorite.title}
               thumbnail={favorite.thumbnail}
               cuisine={favorite.cuisine}
-              equipment={favorite.enrichment?.equipment}
               isFavorite
               onToggleFavorite={() => toggleFavorite(favorite.mealId)}
               onOpen={() => navigate(`/recipes/${favorite.mealId}`)}

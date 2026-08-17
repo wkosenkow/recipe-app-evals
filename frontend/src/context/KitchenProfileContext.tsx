@@ -7,8 +7,8 @@ const DEFAULT_PROFILE: KitchenProfile = {
   servings: 4,
   units: "metric",
   skill: "novice",
-  equipment: { oven: false, blender: false, standMixer: false, slowCooker: false, grill: false },
-  diet: { veg: false, vegan: false, glutenFree: false, dairyFree: false, nutFree: false },
+  equipment: "",
+  diet: "",
 };
 
 interface KitchenProfileContextValue {

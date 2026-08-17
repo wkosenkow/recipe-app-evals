@@ -7,7 +7,6 @@ import { lookupMealById } from "../lib/mealdb";
 import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
 import ChatView from "../components/ChatView";
 import Footer from "../components/Footer";
-import { EQUIPMENT_LABELS, type EquipmentKey } from "../types/kitchen";
 import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
 
 type ViewMode = "card" | "recipe" | "cooking";
@@ -110,8 +109,6 @@ function RecipeDetail() {
     );
   }
 
-  const missing = enrichment?.equipment.filter((key) => !profile.equipment[key as EquipmentKey]) ?? null;
-  const isReady = missing !== null && missing.length === 0;
   const favorite = isFavorite(meal.idMeal);
   const tags = toTagList(meal);
 
@@ -175,20 +172,6 @@ function RecipeDetail() {
                 ↗ View original recipe
               </a>
             )}
-          </div>
-        )}
-
-        {missing !== null && (
-          <div
-            className={`rounded-md border px-3 py-2 text-xs font-semibold ${
-              isReady
-                ? "border-green-500/40 bg-green-500/15 text-green-400"
-                : "border-red-500/40 bg-red-500/15 text-red-400"
-            }`}
-          >
-            {isReady
-              ? "Ready with your kitchen"
-              : `Missing ${missing.map((key) => EQUIPMENT_LABELS[key as EquipmentKey] ?? key).join(", ")}`}
           </div>
         )}
 
