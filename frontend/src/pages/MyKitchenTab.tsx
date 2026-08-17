@@ -1,5 +1,5 @@
 import { useKitchenProfile } from "../context/KitchenProfileContext";
-import { DIET_LABELS, EQUIPMENT_LABELS, type DietKey, type EquipmentKey, type SkillLevel, type UnitSystem } from "../types/kitchen";
+import { type SkillLevel, type UnitSystem } from "../types/kitchen";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 
@@ -16,14 +16,6 @@ const SKILL_OPTIONS: { value: SkillLevel; label: string }[] = [
 function MyKitchenTab() {
   const { profile, updateProfile } = useKitchenProfile();
 
-  const toggleEquipment = (key: EquipmentKey) => {
-    updateProfile({ equipment: { ...profile.equipment, [key]: !profile.equipment[key] } });
-  };
-
-  const toggleDiet = (key: DietKey) => {
-    updateProfile({ diet: { ...profile.diet, [key]: !profile.diet[key] } });
-  };
-
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
       <Header />
@@ -31,42 +23,22 @@ function MyKitchenTab() {
 
         <section className="flex flex-col gap-2">
           <div className="text-sm font-semibold text-gray-300">Equipment</div>
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(EQUIPMENT_LABELS) as EquipmentKey[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => toggleEquipment(key)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  profile.equipment[key]
-                    ? "border-green-500/40 bg-green-500/15 text-green-400"
-                    : "border-gray-700 bg-gray-800 text-gray-400"
-                }`}
-              >
-                {EQUIPMENT_LABELS[key]}
-              </button>
-            ))}
-          </div>
+          <input
+            value={profile.equipment}
+            onChange={(e) => updateProfile({ equipment: e.target.value })}
+            placeholder="e.g. oven, blender, no stand mixer"
+            className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600"
+          />
         </section>
 
         <section className="flex flex-col gap-2">
           <div className="text-sm font-semibold text-gray-300">Dietary restrictions</div>
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(DIET_LABELS) as DietKey[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => toggleDiet(key)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  profile.diet[key]
-                    ? "border-red-500/40 bg-red-500/15 text-red-400"
-                    : "border-gray-700 bg-gray-800 text-gray-400"
-                }`}
-              >
-                {DIET_LABELS[key]}
-              </button>
-            ))}
-          </div>
+          <input
+            value={profile.diet}
+            onChange={(e) => updateProfile({ diet: e.target.value })}
+            placeholder="e.g. dairy-free, tree nut allergy"
+            className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600"
+          />
         </section>
 
         <section className="flex flex-col gap-2">

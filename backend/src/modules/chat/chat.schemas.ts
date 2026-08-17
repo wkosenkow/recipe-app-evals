@@ -27,8 +27,8 @@ const kitchenProfileSchema = z.object({
   servings: z.number().int().positive(),
   units: z.enum(["metric", "imperial"]),
   skill: z.enum(["novice", "experienced"]),
-  equipment: z.record(z.string(), z.boolean()),
-  diet: z.record(z.string(), z.boolean()),
+  equipment: z.string(),
+  diet: z.string(),
 });
 
 const chatTurnSchema = z.object({

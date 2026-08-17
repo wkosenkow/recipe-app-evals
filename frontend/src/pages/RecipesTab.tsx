@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import { useFavorites } from "../context/FavoritesContext";
 import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
-import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
@@ -137,7 +136,6 @@ function RecipesTab() {
               key={meal.idMeal}
               title={meal.strMeal}
               thumbnail={meal.strMealThumb}
-              equipment={RECIPE_ENRICHMENT[meal.idMeal]?.equipment}
               isFavorite={isFavorite(meal.idMeal)}
               onToggleFavorite={() => toggleFavorite(meal.idMeal)}
               onOpen={() => navigate(`/recipes/${meal.idMeal}`)}
