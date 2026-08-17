@@ -1,3 +1,6 @@
+import { useNavigate } from "react-router-dom";
+
+import { useAuth } from "../context/AuthContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { type SkillLevel, type UnitSystem } from "../types/kitchen";
 import Footer from "../components/Footer";
@@ -14,12 +17,32 @@ const SKILL_OPTIONS: { value: SkillLevel; label: string }[] = [
 ];
 
 function MyKitchenTab() {
-  const { profile, updateProfile } = useKitchenProfile();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profile, loading, updateProfile } = useKitchenProfile();
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-950">
+        <Header />
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          <div className="py-10 text-center text-sm text-gray-500">
+            Log in to customize your kitchen.{" "}
+            <button type="button" onClick={() => navigate("/login")} className="font-semibold text-blue-400 hover:underline">
+              Log in
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
       <Header />
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+        {loading && <div className="text-sm text-gray-500">Loading…</div>}
 
         <section className="flex flex-col gap-2">
           <div className="text-sm font-semibold text-gray-300">Equipment</div>

@@ -11,6 +11,7 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
 import { favoriteRouter } from "./modules/favorites/favorite.routes.js";
+import { kitchenProfileRouter } from "./modules/kitchen-profile/kitchen-profile.routes.js";
 
 export const app = express();
 
@@ -36,6 +37,7 @@ app.get("/api/health", (_request, response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/favorites", favoriteRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/kitchen-profile", kitchenProfileRouter);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistPath = path.join(__dirname, "../../frontend/dist");
