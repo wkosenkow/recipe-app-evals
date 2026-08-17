@@ -12,6 +12,8 @@ const request = async <T>(path: string): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
+const areaCountryMap = new Map<string, string>();
+
 export const searchMealsByName = async (query: string): Promise<MealDBMeal[]> => {
   const data = await request<{ meals: MealDBMeal[] | null }>(`/search.php?s=${encodeURIComponent(query)}`);
   return data.meals ?? [];
@@ -19,7 +21,24 @@ export const searchMealsByName = async (query: string): Promise<MealDBMeal[]> =>
 
 export const filterMealsByArea = async (area: string): Promise<MealDBSummary[]> => {
   const data = await request<{ meals: MealDBSummary[] | null }>(`/filter.php?a=${encodeURIComponent(area)}`);
-  return data.meals ?? [];
+  if (data.meals && data.meals.length > 0) {
+    return data.meals;
+  }
+
+  // TheMealDB list.php?a=list returns demographic adjectives (e.g. "Indian", "French", "American"),
+  // but meals in its database are often indexed under the country name (e.g. "India", "France", "United States").
+  // If the initial filter query returns null/empty, fall back to querying the corresponding country name.
+  const country = areaCountryMap.get(area.toLowerCase());
+  if (country && country.toLowerCase() !== area.toLowerCase()) {
+    const fallbackData = await request<{ meals: MealDBSummary[] | null }>(
+      `/filter.php?a=${encodeURIComponent(country)}`,
+    );
+    if (fallbackData.meals && fallbackData.meals.length > 0) {
+      return fallbackData.meals;
+    }
+  }
+
+  return [];
 };
 
 export const lookupMealById = async (id: string): Promise<MealDBMeal | null> => {
@@ -28,7 +47,12 @@ export const lookupMealById = async (id: string): Promise<MealDBMeal | null> => 
 };
 
 export const listAreas = async (): Promise<string[]> => {
-  const data = await request<{ meals: { strArea: string }[] }>("/list.php?a=list");
+  const data = await request<{ meals: { strArea: string; strCountry?: string }[] }>("/list.php?a=list");
+  for (const meal of data.meals) {
+    if (meal.strArea && meal.strCountry) {
+      areaCountryMap.set(meal.strArea.toLowerCase(), meal.strCountry);
+    }
+  }
   // list.php?a=list is a world-country reference table (one row per country), not one row
   // per distinct area — several countries share the same strArea (e.g. Dominica and the
   // Dominican Republic are both "Dominican"), so dedupe before rendering.
