@@ -1,3 +1,6 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -23,5 +26,13 @@ app.get("/api/health", (_request, response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/favorites", favoriteRouter);
 app.use("/api/chat", chatRouter);
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDistPath = path.join(__dirname, "../../frontend/dist");
+
+app.use(express.static(frontendDistPath));
+app.get(/^\/(?!api\/).*/, (_request, response) => {
+  response.sendFile(path.join(frontendDistPath, "index.html"));
+});
 
 app.use(errorHandler);

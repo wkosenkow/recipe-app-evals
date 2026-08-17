@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: kitchen-companion
+    runtime: node
+    plan: free
+    buildCommand: "cd frontend && npm ci && npm run build && cd ../backend && npm ci && npm run build"
+    startCommand: "cd backend && npm start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CHAT_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-4-5
+      - key: VITE_API_URL
+        value: ""
