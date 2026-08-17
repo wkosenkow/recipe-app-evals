@@ -31,17 +31,23 @@ const kitchenProfileSchema = z.object({
   diet: z.string(),
 });
 
+// Every turn is replayed to the model on each request, so the prompt — and the
+// per-request token cost — grows with the conversation. These caps are the
+// server-side ceiling; the client trims to a smaller window before sending.
+const MAX_TURN_LENGTH = 2000;
+const MAX_HISTORY_TURNS = 40;
+
 const chatTurnSchema = z.object({
   role: z.enum(["user", "assistant"]),
-  text: z.string().min(1),
+  text: z.string().min(1).max(MAX_TURN_LENGTH),
 });
 
 export const chatRequestBodySchema = z.object({
   recipe: recipeSchema,
   enrichment: enrichmentSchema.optional(),
   kitchenProfile: kitchenProfileSchema,
-  message: z.string().min(1).optional(),
-  history: z.array(chatTurnSchema).optional(),
+  message: z.string().min(1).max(MAX_TURN_LENGTH).optional(),
+  history: z.array(chatTurnSchema).max(MAX_HISTORY_TURNS).optional(),
 });
 
 export type ChatRequestBody = z.infer<typeof chatRequestBodySchema>;

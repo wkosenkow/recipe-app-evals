@@ -15,6 +15,12 @@ import { kitchenProfileRouter } from "./modules/kitchen-profile/kitchen-profile.
 
 export const app = express();
 
+// Render terminates TLS at its proxy, so without this every request would carry
+// the proxy's IP and the per-IP rate limiters would collapse into one global
+// bucket. Trust exactly one hop — trusting the whole chain would let a client
+// spoof its own IP through X-Forwarded-For and slip past the limiters.
+app.set("trust proxy", 1);
+
 app.use(
   helmet({
     contentSecurityPolicy: {
