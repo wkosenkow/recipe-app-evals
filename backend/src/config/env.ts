@@ -13,7 +13,7 @@ const envSchema = z
     JWT_EXPIRES_IN: z.string().default("7d"),
     CHAT_PROVIDER: z.enum(["ollama", "anthropic"]).default("ollama"),
     ANTHROPIC_API_KEY: z.string().optional(),
-    ANTHROPIC_MODEL: z.string().default("claude-haiku-4-5"),
+    ANTHROPIC_MODEL: z.string().default("claude-3-5-haiku-latest"),
   })
   .superRefine((value, ctx) => {
     if (value.CHAT_PROVIDER === "anthropic" && !value.ANTHROPIC_API_KEY) {
