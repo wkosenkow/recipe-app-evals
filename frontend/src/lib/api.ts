@@ -9,11 +9,18 @@ export class ApiError extends Error {
   }
 }
 
+let authToken: string | null = null;
+
+export const setAuthToken = (token: string | null): void => {
+  authToken = token;
+};
+
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...init?.headers,
     },
   });

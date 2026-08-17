@@ -6,25 +6,23 @@ const TABS = [
   { to: "/kitchen", label: "My Kitchen" },
 ];
 
-function TabBar() {
+function Header() {
   return (
-    <nav className="flex border-t border-gray-700 bg-gray-900">
+    <div className="flex items-center gap-4 border-b border-gray-700 bg-gray-900 px-4 py-3">
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}
           to={tab.to}
           end={tab.to === "/"}
           className={({ isActive }) =>
-            `flex-1 py-3 text-center text-xs font-semibold ${
-              isActive ? "text-blue-400" : "text-gray-500"
-            }`
+            `whitespace-nowrap text-sm font-semibold ${isActive ? "text-blue-400" : "text-gray-500"}`
           }
         >
           {tab.label}
         </NavLink>
       ))}
-    </nav>
+    </div>
   );
 }
 
-export default TabBar;
+export default Header;
