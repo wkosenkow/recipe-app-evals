@@ -1,7 +1,14 @@
 import type { Request, Response } from "express";
 
 import { loginBodySchema, registerBodySchema } from "./auth.schemas.js";
-import { comparePassword, hashPassword, signToken, toPublicUser } from "./auth.utils.js";
+import {
+  clearAuthCookie,
+  comparePassword,
+  hashPassword,
+  setAuthCookie,
+  signToken,
+  toPublicUser,
+} from "./auth.utils.js";
 import { User } from "./user.model.js";
 
 export const register = async (request: Request, response: Response): Promise<void> => {
@@ -28,9 +35,12 @@ export const register = async (request: Request, response: Response): Promise<vo
 
   const passwordHash = await hashPassword(validation.data.password);
   const user = await User.create({ email, passwordHash });
-  const token = signToken(String(user._id));
 
-  response.status(201).json({ token, user: toPublicUser(user) });
+  // The token deliberately isn't in the response body — putting it there would
+  // hand it back to JS and undo the point of an httpOnly cookie.
+  setAuthCookie(response, signToken(String(user._id)));
+
+  response.status(201).json({ user: toPublicUser(user) });
 };
 
 export const login = async (request: Request, response: Response): Promise<void> => {
@@ -56,16 +66,26 @@ export const login = async (request: Request, response: Response): Promise<void>
     return;
   }
 
-  const token = signToken(String(user._id));
+  setAuthCookie(response, signToken(String(user._id)));
 
-  response.status(200).json({ token, user: toPublicUser(user) });
+  response.status(200).json({ user: toPublicUser(user) });
+};
+
+export const logout = (_request: Request, response: Response): void => {
+  clearAuthCookie(response);
+  response.status(204).send();
 };
 
 export const me = async (request: Request, response: Response): Promise<void> => {
   const user = await User.findById(request.userId);
 
+  // The token is valid but its user is gone (deleted account). Clear the cookie
+  // so the client isn't left holding a session it can never use, and answer 401
+  // rather than 404 — from the caller's side this is a dead session, and the
+  // frontend already tears down state on 401.
   if (!user) {
-    response.status(404).json({ message: "User not found" });
+    clearAuthCookie(response);
+    response.status(401).json({ message: "Session no longer valid" });
     return;
   }
 
