@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { lookupMealById } from "../lib/mealdb";
@@ -14,6 +15,7 @@ type ViewMode = "card" | "recipe" | "cooking";
 function RecipeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { profile } = useKitchenProfile();
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -112,6 +114,14 @@ function RecipeDetail() {
   const favorite = isFavorite(meal.idMeal);
   const tags = toTagList(meal);
 
+  const handleToggleFavorite = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    toggleFavorite(meal.idMeal, meal);
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
@@ -125,7 +135,7 @@ function RecipeDetail() {
           <div className="text-xl font-semibold text-gray-100">{meal.strMeal}</div>
           <button
             type="button"
-            onClick={() => toggleFavorite(meal.idMeal, meal)}
+            onClick={handleToggleFavorite}
             aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
             className={`text-2xl leading-none ${favorite ? "text-yellow-400" : "text-gray-600"}`}
           >

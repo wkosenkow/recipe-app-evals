@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
 import Footer from "../components/Footer";
@@ -10,7 +11,16 @@ import type { MealDBSummary } from "../types/mealdb";
 
 function RecipesTab() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  const handleToggleFavorite = (mealId: string) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    toggleFavorite(mealId);
+  };
 
   const [areas, setAreas] = useState<string[]>([]);
   const [cuisine, setCuisine] = useState("All");
@@ -137,7 +147,7 @@ function RecipesTab() {
               title={meal.strMeal}
               thumbnail={meal.strMealThumb}
               isFavorite={isFavorite(meal.idMeal)}
-              onToggleFavorite={() => toggleFavorite(meal.idMeal)}
+              onToggleFavorite={() => handleToggleFavorite(meal.idMeal)}
               onOpen={() => navigate(`/recipes/${meal.idMeal}`)}
             />
           ))}

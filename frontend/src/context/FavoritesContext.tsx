@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { useAuth } from "./AuthContext";
 import { apiDelete, apiGet, apiPost } from "../lib/api";
 import { lookupMealById } from "../lib/mealdb";
 import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
@@ -17,16 +18,25 @@ interface FavoritesContextValue {
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) {
+      setFavorites([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     apiGet<{ favorites: Favorite[] }>("/api/favorites")
       .then((data) => setFavorites(data.favorites))
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed to load favorites"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   const value = useMemo<FavoritesContextValue>(
     () => ({

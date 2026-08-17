@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 
 export interface IIngredientNote {
   ingredient: string;
@@ -12,6 +12,7 @@ export interface IEnrichment {
 }
 
 export interface IFavorite {
+  userId: Types.ObjectId;
   mealId: string;
   title: string;
   cuisine: string;
@@ -40,7 +41,8 @@ const enrichmentSchema = new Schema<IEnrichment>(
 
 const favoriteSchema = new Schema<IFavorite>(
   {
-    mealId: { type: String, required: true, unique: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    mealId: { type: String, required: true },
     title: { type: String, required: true },
     cuisine: { type: String, required: true },
     thumbnail: { type: String, required: true },
@@ -58,5 +60,7 @@ const favoriteSchema = new Schema<IFavorite>(
   },
   { timestamps: true },
 );
+
+favoriteSchema.index({ userId: 1, mealId: 1 }, { unique: true });
 
 export const Favorite = model<IFavorite>("Favorite", favoriteSchema);
