@@ -1,31 +1,92 @@
-# recipe-app-evals
+# Kitchen Companion
 
-Recipe generation app with an LLM-eval pipeline in the backend — two models generate recipes for the same prompts, a third model judges them pairwise, and results are validated against human labels.
+A cooking companion app: browse recipes, save the ones you like, describe your kitchen once, and then have an AI assistant walk you through cooking a dish — adapted to the equipment you actually own, your dietary restrictions, your preferred units, and how many people you're cooking for.
 
-## Structure
+**Live:** https://kitchen-companion-hs8q.onrender.com
 
-- `frontend/` — React + TypeScript + Vite + Tailwind CSS + React Router
-- `backend/` — Express + TypeScript + Mongoose (MongoDB), Zod-validated env config
+## What it does
 
-## Getting started
+- **Browse and search recipes** by name or cuisine, served live from [TheMealDB](https://www.themealdb.com/api.php).
+- **Save favorites** to your account. A favorite stores a full snapshot of the recipe, so a saved dish stays readable even if the upstream source changes it.
+- **Describe your kitchen once** in My Kitchen — equipment, dietary restrictions, metric or imperial, skill level, default servings — and every AI conversation uses it.
+- **Cook with AI**: a chat that gives a step-by-step walkthrough of the recipe, converts the quantities to your units, scales toward your servings, adjusts the depth of explanation to your skill level, and proactively flags conflicts between the recipe and your kitchen (a tool you don't have, an ingredient you can't eat).
+
+Recipe browsing is open to everyone. Favorites, My Kitchen, and the AI chat require an account.
+
+## Stack
+
+**Frontend** — React 19, TypeScript, Vite, Tailwind CSS 4, React Router 7
+**Backend** — Express 5, TypeScript, Mongoose (MongoDB), Zod-validated env config, JWT sessions
+**LLM** — Ollama locally (free, no API key needed), Anthropic Claude in production, selected by `CHAT_PROVIDER`
+**Deployment** — Render (single web service), MongoDB Atlas
+
+## How it fits together
+
+A few design decisions that aren't obvious from reading the code:
+
+**Recipes are never stored.** They're fetched live from TheMealDB by the browser on every view. TheMealDB has no servings field and no metric/imperial split — just free-text measures like `"1 tbls"` — which is exactly why the app leans on the LLM to interpret and convert quantities rather than trying to compute them in TypeScript.
+
+**A small hand-authored overlay adds what TheMealDB lacks.** `frontend/src/lib/recipe-enrichment.ts` carries equipment requirements, allergen flags, and substitution notes for 13 curated recipes. Recipes outside that set still work — the chat just receives the raw ingredient and instruction text.
+
+**The kitchen profile drives the prompt, not the code.** `backend/src/modules/chat/chat.prompt.ts` sends the whole profile on every turn along with instructions tied to each field, and lets the model reason about conflicts. This is deliberate: pre-computing "you're missing a stand mixer" in TypeScript would need a closed vocabulary of equipment, and equipment and diet are free text.
+
+**One service serves both halves in production.** Express serves the built frontend as static files *and* the `/api/*` routes from a single origin, so there's no CORS configuration or second deployment to keep in sync.
+
+## API
+
+| Method | Route | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/health` | — | Liveness check |
+| `POST` | `/api/auth/register` | — | Create an account |
+| `POST` | `/api/auth/login` | — | Sign in |
+| `GET` | `/api/auth/me` | ✔ | Current user |
+| `GET` | `/api/favorites` | ✔ | List the user's favorites |
+| `POST` | `/api/favorites` | ✔ | Save a favorite |
+| `DELETE` | `/api/favorites/:mealId` | ✔ | Remove a favorite |
+| `GET` | `/api/kitchen-profile` | ✔ | The user's kitchen profile, or defaults |
+| `PUT` | `/api/kitchen-profile` | ✔ | Create or update it |
+| `POST` | `/api/chat` | ✔ | Send a turn, get the assistant's reply |
+
+## Running locally
+
+Requires MongoDB, plus [Ollama](https://ollama.com) if you want the chat to work without an Anthropic API key.
 
 ### Backend
 
 ```bash
 cd backend
-cp .env.example .env   # fill in MONGODB_URI
+cp .env.example .env    # then fill in MONGODB_URI and JWT_SECRET
 npm install
-npm run dev
+npm run dev             # http://localhost:3000
 ```
 
-API health check: `GET http://localhost:3000/api/health`
+Health check: `curl http://localhost:3000/api/health`
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev             # http://localhost:5173
 ```
 
-App: `http://localhost:5173`
+### Chat provider
+
+`CHAT_PROVIDER` decides which model answers. It defaults to `ollama`, so local development needs no API key and costs nothing:
+
+```bash
+ollama pull llama3.1:8b
+```
+
+Set `CHAT_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` to use Claude instead — that's what production runs. The env config fails fast at startup if the provider is set to `anthropic` without a key, rather than surfacing a cryptic SDK error on the first chat request.
+
+See `backend/.env.example` for every variable.
+
+## Deployment
+
+`render.yaml` at the repo root is a Render Blueprint: connect the repository as a Blueprint and Render provisions the service from it. `MONGODB_URI` and `ANTHROPIC_API_KEY` are marked `sync: false`, so Render prompts for them instead of keeping them in git, and `JWT_SECRET` is generated by Render.
+
+Two things worth knowing if you deploy your own copy:
+
+- **MongoDB Atlas network access.** Render has no static outbound IP on the free plan, so Atlas needs `0.0.0.0/0` in its IP access list or the app cannot connect.
+- **`CLIENT_ORIGIN` must match your deployed URL**, not the localhost default.
