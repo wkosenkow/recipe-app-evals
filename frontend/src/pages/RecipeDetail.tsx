@@ -6,7 +6,7 @@ import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { lookupMealById } from "../lib/mealdb";
 import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
 import ChatView from "../components/ChatView";
-import TabBar from "../components/TabBar";
+import Footer from "../components/Footer";
 import { EQUIPMENT_LABELS, type EquipmentKey } from "../types/kitchen";
 import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
 
@@ -210,7 +210,7 @@ function RecipeDetail() {
         </div>
       </div>
 
-      <TabBar />
+      <Footer />
     </div>
   );
 }

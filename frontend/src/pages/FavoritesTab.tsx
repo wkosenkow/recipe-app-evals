@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 
 import { useFavorites } from "../context/FavoritesContext";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
-import TabBar from "../components/TabBar";
 
 function FavoritesTab() {
   const navigate = useNavigate();
@@ -10,9 +11,8 @@ function FavoritesTab() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
+      <Header />
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-        <div className="text-xl font-semibold text-gray-100">Favorites</div>
-
         {loading && <div className="text-sm text-gray-500">Loading…</div>}
         {error && <div className="text-sm text-red-500">{error}</div>}
 
@@ -38,7 +38,7 @@ function FavoritesTab() {
         </div>
       </div>
 
-      <TabBar />
+      <Footer />
     </div>
   );
 }

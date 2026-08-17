@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useFavorites } from "../context/FavoritesContext";
 import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
 import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
-import TabBar from "../components/TabBar";
 import type { MealDBSummary } from "../types/mealdb";
 
 function RecipesTab() {
@@ -71,9 +72,8 @@ function RecipesTab() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
+      <Header />
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-        <div className="text-xl font-semibold text-gray-100">Recipes</div>
-
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -146,7 +146,7 @@ function RecipesTab() {
         </div>
       </div>
 
-      <TabBar />
+      <Footer />
     </div>
   );
 }

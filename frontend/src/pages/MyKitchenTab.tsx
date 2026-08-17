@@ -1,6 +1,7 @@
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { DIET_LABELS, EQUIPMENT_LABELS, type DietKey, type EquipmentKey, type SkillLevel, type UnitSystem } from "../types/kitchen";
-import TabBar from "../components/TabBar";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 
 const UNIT_OPTIONS: { value: UnitSystem; label: string }[] = [
   { value: "metric", label: "Grams / ml" },
@@ -25,8 +26,8 @@ function MyKitchenTab() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
+      <Header />
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
-        <div className="text-xl font-semibold text-gray-100">My Kitchen</div>
 
         <section className="flex flex-col gap-2">
           <div className="text-sm font-semibold text-gray-300">Equipment</div>
@@ -131,7 +132,7 @@ function MyKitchenTab() {
         </section>
       </div>
 
-      <TabBar />
+      <Footer />
     </div>
   );
 }
