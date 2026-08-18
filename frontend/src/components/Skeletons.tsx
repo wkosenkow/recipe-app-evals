@@ -48,7 +48,7 @@ export function RecipeListSkeleton({ count = 6, label = "Loading recipes" }: { c
 
 export function RecipeDetailSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="flex min-h-screen animate-pulse flex-col">
+    <div role="status" aria-live="polite" className="flex min-h-dvh animate-pulse flex-col">
       <span className="sr-only">Loading recipe</span>
       <div aria-hidden="true" className="flex flex-1 flex-col gap-4 p-6">
         <div className={`h-3 w-16 ${BLOCK}`} />

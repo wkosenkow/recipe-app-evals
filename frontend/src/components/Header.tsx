@@ -15,6 +15,10 @@ function Header() {
       <Logo />
       {/* Pushed to the trailing edge, away from the mark — the design's
           left-aligned, asymmetric direction. */}
+      {/* `-my-2 py-2` on each tab grows the tap target without making the
+          header taller. neutral-500 rather than neutral-600 for the inactive
+          state: neutral-600 on this ground is 4.1:1, under the 4.5:1 small
+          text needs, and these labels are 11px. neutral-500 is 5.4:1. */}
       <nav className="ml-auto flex gap-3 text-[11px] font-semibold whitespace-nowrap">
         {TABS.map(({ to, label, Icon }) => (
           <NavLink
@@ -22,7 +26,9 @@ function Header() {
             to={to}
             end={to === "/"}
             className={({ isActive }) =>
-              `flex items-center gap-1 ${isActive ? "text-accent" : "text-neutral-600 hover:text-neutral-400"}`
+              `-my-2 flex items-center gap-1 py-2 ${
+                isActive ? "text-accent" : "text-neutral-500 hover:text-neutral-300"
+              }`
             }
           >
             <Icon size={15} />

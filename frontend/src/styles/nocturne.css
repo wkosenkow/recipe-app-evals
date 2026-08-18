@@ -26,6 +26,14 @@
  * 5. Only the classes this app uses are ported. `.nav`, `.table`, `.dialog`,
  *    `.radio` and `.tag-accent-2` are left in the design project; add them
  *    from the source verbatim if a screen ever needs them.
+ * 6. A `(pointer: coarse)` block at the foot of this file relaxes the
+ *    system's density for touch. Nocturne states its 0.70× density as a
+ *    deliberate choice, and it is the right one for a pointer — but a mobile
+ *    usability audit measured every control in the app at 17–41px, none
+ *    reaching the 44px Apple asks for and half missing WCAG 2.2's 24px
+ *    floor, with that density as the single common cause. The override is
+ *    scoped to coarse pointers, so the design system's own look is untouched
+ *    wherever it was designed to apply.
  *
  * The webfonts are npm packages (`@fontsource-variable/inter`,
  * `@fontsource/silkscreen`) rather than the source's Google Fonts `@import`,
@@ -253,4 +261,49 @@
   }
   .tag-outline:not(:disabled):hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
   .tag-outline:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+/* — touch —
+ *
+ * Deviation 6 from the header note. `pointer: coarse` is the finger/stylus
+ * case; a mouse or trackpad never matches it, so everything below is invisible
+ * on desktop.
+ *
+ * Unlayered on purpose, unlike the rest of this file: these are floors that
+ * must survive a utility class in the markup. `.btn min-height` layered into
+ * `components` would lose to any `h-*` or `py-*` utility on the same element —
+ * which is exactly the situation on the buttons that most need the floor.
+ */
+@media (pointer: coarse) {
+  /* Tailwind derives every spacing utility from this — `gap-3` is
+   * `calc(var(--spacing) * 3)` — so raising the base lifts padding, gaps and
+   * the `h-*`/`w-*` scale everywhere at once. 4px is the round number that
+   * keeps the scale's own arithmetic tidy (`p-4` = 16px, `gap-2` = 8px). */
+  :root {
+    --spacing: 4px;
+  }
+
+  /* Apple asks 44pt, Material 48dp, WCAG 2.2 sets an absolute floor of 24px.
+   * 44px is the target here; `min-height` rather than `height` so a control
+   * with more content than one line still grows. */
+  .btn,
+  .input,
+  .seg-opt {
+    min-height: 44px;
+  }
+
+  /* iOS Safari zooms the page in on focusing any field under 16px and never
+   * zooms back out, leaving the cook on a magnified, sideways-scrolling page
+   * after one tap on the search box. 16px is the exact threshold. */
+  .input {
+    font-size: 16px;
+  }
+
+  /* Chips are a secondary control and a row of 44px ones eats the screen, so
+   * they take WCAG's floor plus enough padding to be hit reliably rather than
+   * the full Apple target. */
+  .tag-outline {
+    min-height: 36px;
+    padding-inline: 14px;
+  }
 }

@@ -5,7 +5,7 @@ import Header from "../components/Header";
 
 function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <Header />
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         {/* Silkscreen carries the numeral, the same pixel face the cuisine
