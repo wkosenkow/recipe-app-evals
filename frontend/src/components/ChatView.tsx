@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { sendChatMessage, type ChatMessage, type ChatRecipe } from "../lib/chat";
+import { ChatStreamError, streamChatMessage, type ChatMessage, type ChatRecipe } from "../lib/chat";
 import type { RecipeEnrichment } from "../lib/recipe-enrichment";
 import type { KitchenProfile } from "../types/kitchen";
 
@@ -10,6 +10,7 @@ const QUICK_PICKS = ["No dairy", "Fewer servings", "Different spices", "More det
 // would file it into the conversation and replay it to the model as something
 // it actually said.
 const ERROR_TEXT = "Couldn't reach the assistant just now.";
+const TRUNCATED_TEXT = "The reply broke off partway.";
 
 interface ChatViewProps {
   recipe: ChatRecipe;
@@ -19,33 +20,86 @@ interface ChatViewProps {
 
 function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [streamingText, setStreamingText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const started = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const requestOpening = () => {
+  const runStream = async (
+    turn: { message?: string; history?: ChatMessage[] },
+    rollback: () => void,
+  ): Promise<void> => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
+    setStreamingText("");
 
-    sendChatMessage({ recipe, enrichment, kitchenProfile })
-      .then((reply) => setMessages([{ role: "assistant", text: reply }]))
-      .catch(() => setError(ERROR_TEXT))
-      .finally(() => setLoading(false));
+    try {
+      const reply = await streamChatMessage(
+        { recipe, enrichment, kitchenProfile, ...turn },
+        {
+          // Deltas already in flight when we cancelled must not land: the
+          // buffer now belongs to a newer request, and appending to it would
+          // splice the abandoned reply into the new one.
+          onDelta: (text) => {
+            if (controller.signal.aborted) return;
+            setStreamingText((prev) => prev + text);
+          },
+          signal: controller.signal,
+        },
+      );
+      // A reply that finished just as we cancelled it must still be dropped:
+      // this request has been superseded, and appending it now would land a
+      // stale answer after a newer one.
+      if (controller.signal.aborted) return;
+
+      setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+    } catch (err) {
+      // We tore this down ourselves — either the view is going away or a newer
+      // request replaced it. Touching state here would resurrect a reply the
+      // user has already moved on from.
+      if (controller.signal.aborted) return;
+
+      const partial = err instanceof ChatStreamError ? err.partial.trim() : "";
+
+      if (partial) {
+        // Genuinely what the model said, just unfinished. Throwing it away
+        // would discard steps the cook can already act on, so keep it and be
+        // honest that it stops short.
+        setMessages((prev) => [...prev, { role: "assistant", text: partial }]);
+        setError(TRUNCATED_TEXT);
+      } else {
+        rollback();
+        setError(ERROR_TEXT);
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setStreamingText("");
+        setLoading(false);
+      }
+    }
+  };
+
+  const requestOpening = () => {
+    void runStream({}, () => {});
   };
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-
     requestOpening();
+    // Stop generating when the cook closes the recipe: an unread reply is
+    // billed all the same.
+    return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, error]);
+  }, [messages, streamingText, loading, error]);
 
   const send = (text: string) => {
     const trimmed = text.trim();
@@ -54,22 +108,16 @@ function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
     const history = messages;
     setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setInput("");
-    setLoading(true);
-    setError(null);
 
-    sendChatMessage({ recipe, enrichment, kitchenProfile, message: trimmed, history })
-      .then((reply) => setMessages((prev) => [...prev, { role: "assistant", text: reply }]))
-      .catch(() => {
-        // Roll the conversation back to before the send and hand the text back
-        // to the input. Leaving the user's turn in place would put a message
-        // into the history that the assistant never answered, which then gets
-        // replayed on the next request; this way retrying is just pressing Send
-        // again.
-        setMessages(history);
-        setInput(trimmed);
-        setError(ERROR_TEXT);
-      })
-      .finally(() => setLoading(false));
+    void runStream({ message: trimmed, history }, () => {
+      // Roll the conversation back to before the send and hand the text back
+      // to the input. Leaving the user's turn in place would put a message
+      // into the history that the assistant never answered, which then gets
+      // replayed on the next request; this way retrying is just pressing Send
+      // again.
+      setMessages(history);
+      setInput(trimmed);
+    });
   };
 
   return (
@@ -88,13 +136,24 @@ function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
             </div>
           </div>
         ))}
-        {loading && (
+
+        {streamingText && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] whitespace-pre-wrap rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm leading-relaxed text-gray-100">
+              {streamingText}
+              <span className="ml-0.5 inline-block animate-pulse text-gray-500">▍</span>
+            </div>
+          </div>
+        )}
+
+        {loading && !streamingText && (
           <div className="flex justify-start">
             <div className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-500">
               Thinking…
             </div>
           </div>
         )}
+
         {error && (
           <div role="alert" className="flex flex-col items-center gap-1 py-2 text-center text-sm text-red-400">
             <span>{error}</span>
@@ -103,7 +162,11 @@ function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
                 Try again
               </button>
             ) : (
-              <span className="text-xs text-gray-500">Your message is back in the box — send it again.</span>
+              <span className="text-xs text-gray-500">
+                {error === TRUNCATED_TEXT
+                  ? "Ask for the rest and it will pick up from there."
+                  : "Your message is back in the box — send it again."}
+              </span>
             )}
           </div>
         )}
