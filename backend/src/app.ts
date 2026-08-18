@@ -11,6 +11,7 @@ import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
+import { cookingSessionRouter } from "./modules/cooking-session/cooking-session.routes.js";
 import { favoriteRouter } from "./modules/favorites/favorite.routes.js";
 import { kitchenProfileRouter } from "./modules/kitchen-profile/kitchen-profile.routes.js";
 
@@ -52,6 +53,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/favorites", favoriteRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/kitchen-profile", kitchenProfileRouter);
+app.use("/api/cooking-sessions", cookingSessionRouter);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistPath = path.join(__dirname, "../../frontend/dist");
