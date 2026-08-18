@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 
 import { useResolvedBack } from "../lib/use-resolved-back";
 import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 import { useRecipe, KICKER } from "./recipe-shared";
 
 function RecipeTextView() {
@@ -46,6 +47,7 @@ function RecipeTextView() {
           </div>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

@@ -1,13 +1,22 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../lib/api";
 import Logo from "../components/Logo";
 
+interface SignUpState {
+  from?: string;
+  pendingFavorite?: string;
+}
+
 function SignUpPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register } = useAuth();
+
+  // Same contract as the login screen — see the note there.
+  const { from, pendingFavorite } = (location.state as SignUpState | null) ?? {};
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +36,7 @@ function SignUpPage() {
 
     try {
       await register(email, password);
-      navigate("/");
+      navigate(from ?? "/", { replace: true, state: pendingFavorite ? { pendingFavorite } : null });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to sign up");
     } finally {
@@ -82,7 +91,7 @@ function SignUpPage() {
 
         <div className="text-center text-sm text-neutral-500">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold">
+          <Link to="/login" state={location.state} className="font-semibold">
             Log in
           </Link>
         </div>

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 import RecipeCard from "../components/RecipeCard";
 import { RecipeListSkeleton } from "../components/Skeletons";
 
@@ -59,6 +60,7 @@ function FavoritesTab() {
       </div>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 }

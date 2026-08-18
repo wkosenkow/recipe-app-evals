@@ -5,6 +5,7 @@ import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { type SkillLevel, type UnitSystem } from "../types/kitchen";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 
 const UNIT_OPTIONS: { value: UnitSystem; label: string }[] = [
   { value: "metric", label: "Grams / ml" },
@@ -38,6 +39,7 @@ function MyKitchenTab() {
           </div>
         </div>
         <Footer />
+        <BottomNav />
       </div>
     );
   }
@@ -139,6 +141,7 @@ function MyKitchenTab() {
       </div>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 }

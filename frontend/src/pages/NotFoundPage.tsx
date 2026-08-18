@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 
 function NotFoundPage() {
   return (
@@ -20,6 +21,7 @@ function NotFoundPage() {
         </div>
       </div>
       <Footer />
+      <BottomNav />
     </div>
   );
 }

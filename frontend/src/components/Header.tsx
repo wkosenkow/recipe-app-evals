@@ -1,26 +1,19 @@
-import { BookOpen, SlidersHorizontal, Star } from "@phosphor-icons/react";
 import { NavLink } from "react-router-dom";
 
 import Logo from "./Logo";
-
-const TABS = [
-  { to: "/", label: "Recipes", Icon: BookOpen },
-  { to: "/favorites", label: "Favorites", Icon: Star },
-  { to: "/kitchen", label: "My Kitchen", Icon: SlidersHorizontal },
-];
+import { NAV_TABS } from "./nav-tabs";
 
 function Header() {
   return (
     <header className="flex items-center gap-6 border-b border-neutral-800 px-6 py-4">
       <Logo />
-      {/* Pushed to the trailing edge, away from the mark — the design's
-          left-aligned, asymmetric direction. */}
-      {/* `-my-2 py-2` on each tab grows the tap target without making the
-          header taller. neutral-500 rather than neutral-600 for the inactive
-          state: neutral-600 on this ground is 4.1:1, under the 4.5:1 small
-          text needs, and these labels are 11px. neutral-500 is 5.4:1. */}
-      <nav className="ml-auto flex gap-3 text-[11px] font-semibold whitespace-nowrap">
-        {TABS.map(({ to, label, Icon }) => (
+      {/* Hidden below 640px, where BottomNav carries the same three
+          destinations within thumb's reach. `-my-2 py-2` grows each target
+          without making the header taller; neutral-500 rather than
+          neutral-600 for the inactive state, which is 4.1:1 on this ground
+          against the 4.5:1 these 11px labels need. */}
+      <nav aria-label="Main" className="ml-auto hidden gap-3 text-[11px] font-semibold whitespace-nowrap sm:flex">
+        {NAV_TABS.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}

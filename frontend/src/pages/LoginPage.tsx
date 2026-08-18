@@ -1,18 +1,28 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../lib/api";
 import Logo from "../components/Logo";
 
+interface LoginState {
+  from?: string;
+  pendingFavorite?: string;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Whoever sent the guest here says where they were and, if they were part
+  // way through saving a recipe, which one. Both are handed straight back.
+  const { from, pendingFavorite } = (location.state as LoginState | null) ?? {};
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -21,7 +31,9 @@ function LoginPage() {
 
     try {
       await login(email, password);
-      navigate("/");
+      // `replace`, so the back gesture from the restored screen doesn't land
+      // on a login form the cook has already used.
+      navigate(from ?? "/", { replace: true, state: pendingFavorite ? { pendingFavorite } : null });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to log in");
     } finally {
@@ -75,7 +87,9 @@ function LoginPage() {
 
         <div className="text-center text-sm text-neutral-500">
           Don&apos;t have an account?{" "}
-          <Link to="/signup" className="font-semibold">
+          {/* Carries the intent across, so a guest who signs up instead of
+              logging in still lands back where they started. */}
+          <Link to="/signup" state={location.state} className="font-semibold">
             Sign up
           </Link>
         </div>
