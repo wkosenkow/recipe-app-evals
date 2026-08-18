@@ -27,6 +27,10 @@ function RecipesTab() {
   const [cuisineQuery, setCuisineQuery] = useState("");
   const [query, setQuery] = useState("");
   const [meals, setMeals] = useState<MealDBSummary[]>([]);
+  // How many the cuisine returned before the name filter narrowed it. Without
+  // this an empty result cannot tell the difference between "this cuisine has
+  // nothing" and "the search box threw everything away".
+  const [cuisineTotal, setCuisineTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +58,7 @@ function RecipesTab() {
         .then((results) => {
           if (cancelled) return;
           const q = query.trim().toLowerCase();
+          setCuisineTotal(cuisine !== "All" ? results.length : 0);
           const filtered =
             cuisine !== "All" && q !== "" ? results.filter((meal) => meal.strMeal.toLowerCase().includes(q)) : results;
           setMeals(filtered);
@@ -72,7 +77,21 @@ function RecipesTab() {
     };
   }, [cuisine, query]);
 
-  const showPrompt = cuisine === "All" && query.trim() === "";
+  const trimmedQuery = query.trim();
+  const showPrompt = cuisine === "All" && trimmedQuery === "";
+
+  // The search box matches meal names, so a cuisine typed into it finds
+  // nothing — "Indian" is a cuisine, not a dish. Offer the cuisine instead of
+  // letting the dead end stand.
+  const suggestedArea =
+    cuisine === "All" && trimmedQuery !== ""
+      ? areas.find((area) => area.toLowerCase() === trimmedQuery.toLowerCase())
+      : undefined;
+
+  // The cuisine returned recipes and the name filter removed every one of
+  // them. Saying "no recipes match" here hides the cause: the cook picked a
+  // cuisine and still sees nothing, because of text left in the other box.
+  const narrowedToNothing = cuisine !== "All" && trimmedQuery !== "" && cuisineTotal > 0;
 
   const matchingAreas =
     cuisine === "All" && cuisineQuery.trim() !== ""
@@ -137,7 +156,38 @@ function RecipesTab() {
         )}
 
         {!loading && !error && !showPrompt && meals.length === 0 && (
-          <div className="py-10 text-center text-sm text-gray-500">No recipes match your search.</div>
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-gray-500">
+            {narrowedToNothing ? (
+              <>
+                <span>
+                  {cuisineTotal} {cuisine} recipes, but none with “{trimmedQuery}” in the name.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="font-semibold text-blue-400 hover:underline"
+                >
+                  Clear the search
+                </button>
+              </>
+            ) : suggestedArea ? (
+              <>
+                <span>No recipe is named “{trimmedQuery}”.</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCuisine(suggestedArea);
+                    setQuery("");
+                  }}
+                  className="font-semibold text-blue-400 hover:underline"
+                >
+                  Browse {suggestedArea} recipes instead
+                </button>
+              </>
+            ) : (
+              <span>No recipes match your search.</span>
+            )}
+          </div>
         )}
 
         <div className="flex flex-col gap-3">
