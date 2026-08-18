@@ -9,6 +9,11 @@ import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
 import type { MealDBSummary } from "../types/mealdb";
 
+// Search returns whole meals (which carry strArea); the cuisine filter returns
+// summaries that don't. One optional field covers both, and lets a card label
+// itself when the data happens to be there.
+type RecipeListItem = MealDBSummary & { strArea?: string };
+
 function RecipesTab() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -26,7 +31,7 @@ function RecipesTab() {
   const [cuisine, setCuisine] = useState("All");
   const [cuisineQuery, setCuisineQuery] = useState("");
   const [query, setQuery] = useState("");
-  const [meals, setMeals] = useState<MealDBSummary[]>([]);
+  const [meals, setMeals] = useState<RecipeListItem[]>([]);
   // How many the cuisine returned before the name filter narrowed it. Without
   // this an empty result cannot tell the difference between "this cuisine has
   // nothing" and "the search box threw everything away".
@@ -99,35 +104,35 @@ function RecipesTab() {
       : [];
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950">
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
         <input
+          className="input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search recipes…"
-          className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500"
         />
 
         {cuisine === "All" ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <input
+              className="input"
               value={cuisineQuery}
               onChange={(e) => setCuisineQuery(e.target.value)}
               placeholder="Filter cuisines…"
-              className="rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500"
             />
             {matchingAreas.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {matchingAreas.map((area) => (
                   <button
                     key={area}
                     type="button"
+                    className="tag tag-outline"
                     onClick={() => {
                       setCuisine(area);
                       setCuisineQuery("");
                     }}
-                    className="rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-400"
                   >
                     {area}
                   </button>
@@ -136,27 +141,32 @@ function RecipesTab() {
             )}
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
+            {/* Selected, not merely offered — so it's the filled tag rather
+                than the outline the suggestions above use. */}
             <button
               type="button"
               onClick={() => setCuisine("All")}
-              className="flex items-center gap-1 rounded-full border border-blue-500/40 bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-400"
+              className="tag tag-accent cursor-pointer gap-1 hover:bg-accent-700"
             >
               {cuisine}
               <span aria-hidden="true">✕</span>
+              <span className="sr-only">— clear this cuisine</span>
             </button>
           </div>
         )}
 
-        {loading && <div className="text-sm text-gray-500">Loading…</div>}
-        {error && <div className="text-sm text-red-500">{error}</div>}
+        {loading && <div className="text-sm text-neutral-500">Loading…</div>}
+        {error && <div className="text-sm text-danger">{error}</div>}
 
         {!loading && !error && showPrompt && (
-          <div className="py-10 text-center text-sm text-gray-500">Pick a cuisine or search for a recipe by name.</div>
+          <div className="py-10 text-center text-sm text-neutral-500">
+            Pick a cuisine or search for a recipe by name.
+          </div>
         )}
 
         {!loading && !error && !showPrompt && meals.length === 0 && (
-          <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-gray-500">
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-neutral-500">
             {narrowedToNothing ? (
               <>
                 <span>
@@ -165,7 +175,7 @@ function RecipesTab() {
                 <button
                   type="button"
                   onClick={() => setQuery("")}
-                  className="font-semibold text-blue-400 hover:underline"
+                  className="font-semibold text-accent-300 hover:text-accent-200"
                 >
                   Clear the search
                 </button>
@@ -179,7 +189,7 @@ function RecipesTab() {
                     setCuisine(suggestedArea);
                     setQuery("");
                   }}
-                  className="font-semibold text-blue-400 hover:underline"
+                  className="font-semibold text-accent-300 hover:text-accent-200"
                 >
                   Browse {suggestedArea} recipes instead
                 </button>
@@ -196,6 +206,11 @@ function RecipesTab() {
               key={meal.idMeal}
               title={meal.strMeal}
               thumbnail={meal.strMealThumb}
+              // In cuisine mode every card belongs to the selected cuisine —
+              // the filter endpoint just doesn't repeat it per meal. Labelling
+              // them anyway keeps the cards uniform and still reads correctly
+              // once the chip has scrolled out of view.
+              cuisine={meal.strArea ?? (cuisine !== "All" ? cuisine : undefined)}
               isFavorite={isFavorite(meal.idMeal)}
               onToggleFavorite={() => handleToggleFavorite(meal.idMeal)}
               onOpen={() => navigate(`/recipes/${meal.idMeal}`)}

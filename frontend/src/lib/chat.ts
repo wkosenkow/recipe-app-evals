@@ -49,6 +49,24 @@ export class ChatStreamError extends Error {
 // Keep the most recent turns; the backend enforces a hard ceiling of its own.
 const HISTORY_WINDOW = 20;
 
+// Mirrors chat.schemas.ts's own per-turn cap — keep the two in sync. The
+// model's own replies aren't bounded by much: Anthropic's max_tokens (1024)
+// alone permits well past 2000 characters, and Ollama has no cap at all. A
+// long opening walkthrough easily exceeds this, and replaying it verbatim as
+// history on the very next turn would then get the whole request rejected by
+// the server's own validation — which is exactly what happened testing this
+// screen (a 2546-character opening reply 400'd the next quick pick). The cap
+// exists to keep the conversation's token cost bounded, not to guarantee any
+// one turn's fidelity, so clipping a turn that's too long serves the same
+// goal as rejecting it — degrading gracefully instead of breaking the chat.
+export const MAX_TURN_LENGTH = 2000;
+const TRUNCATION_MARKER = " […truncated]";
+
+const clipTurn = (turn: ChatMessage): ChatMessage =>
+  turn.text.length <= MAX_TURN_LENGTH
+    ? turn
+    : { ...turn, text: turn.text.slice(0, MAX_TURN_LENGTH - TRUNCATION_MARKER.length) + TRUNCATION_MARKER };
+
 type ChatStreamFrame = { type: "delta"; text: string } | { type: "done" } | { type: "error" };
 
 /**
@@ -72,7 +90,7 @@ export const streamChatMessage = async (
       recipe,
       kitchenProfile,
       message,
-      history: history?.slice(-HISTORY_WINDOW),
+      history: history?.slice(-HISTORY_WINDOW).map(clipTurn),
     }),
     signal,
   });

@@ -6,25 +6,29 @@ function Footer() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="border-t border-gray-700 bg-gray-900 px-4 py-2">
+    <footer className="flex items-center justify-center gap-4 border-t border-neutral-800 p-4 text-xs">
       {user ? (
-        <div className="flex items-center justify-center gap-3 text-xs">
-          <span className="min-w-0 truncate text-gray-400">{user.email}</span>
-          <button type="button" onClick={logout} className="flex-shrink-0 font-semibold text-gray-300">
+        <>
+          <span className="min-w-0 truncate text-neutral-500">{user.email}</span>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex-shrink-0 font-semibold text-neutral-300 hover:text-neutral-100"
+          >
             Log out
           </button>
-        </div>
+        </>
       ) : (
-        <div className="flex items-center justify-center gap-3 text-xs font-semibold">
-          <Link to="/login" className="text-gray-300">
+        <>
+          <Link to="/login" className="font-semibold text-neutral-400 hover:text-neutral-200">
             Log in
           </Link>
-          <Link to="/signup" className="text-blue-400">
+          <Link to="/signup" className="font-semibold text-accent hover:text-accent-400">
             Sign up
           </Link>
-        </div>
+        </>
       )}
-    </div>
+    </footer>
   );
 }
 

@@ -1,27 +1,36 @@
+import { BookOpen, SlidersHorizontal, Star } from "@phosphor-icons/react";
 import { NavLink } from "react-router-dom";
 
+import Logo from "./Logo";
+
 const TABS = [
-  { to: "/", label: "Recipes" },
-  { to: "/favorites", label: "Favorites" },
-  { to: "/kitchen", label: "My Kitchen" },
+  { to: "/", label: "Recipes", Icon: BookOpen },
+  { to: "/favorites", label: "Favorites", Icon: Star },
+  { to: "/kitchen", label: "My Kitchen", Icon: SlidersHorizontal },
 ];
 
 function Header() {
   return (
-    <div className="flex items-center gap-4 border-b border-gray-700 bg-gray-900 px-4 py-3">
-      {TABS.map((tab) => (
-        <NavLink
-          key={tab.to}
-          to={tab.to}
-          end={tab.to === "/"}
-          className={({ isActive }) =>
-            `whitespace-nowrap text-sm font-semibold ${isActive ? "text-blue-400" : "text-gray-500"}`
-          }
-        >
-          {tab.label}
-        </NavLink>
-      ))}
-    </div>
+    <header className="flex items-center gap-6 border-b border-neutral-800 px-6 py-4">
+      <Logo />
+      {/* Pushed to the trailing edge, away from the mark — the design's
+          left-aligned, asymmetric direction. */}
+      <nav className="ml-auto flex gap-3 text-[11px] font-semibold whitespace-nowrap">
+        {TABS.map(({ to, label, Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === "/"}
+            className={({ isActive }) =>
+              `flex items-center gap-1 ${isActive ? "text-accent" : "text-neutral-600 hover:text-neutral-400"}`
+            }
+          >
+            <Icon size={15} />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+    </header>
   );
 }
 
