@@ -1,32 +1,31 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Outlet, useParams } from "react-router-dom";
 
-import { useAuth } from "../context/AuthContext";
-import { useFavorites } from "../context/FavoritesContext";
-import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { lookupMealById } from "../lib/mealdb";
-import ChatView from "../components/ChatView";
-import Footer from "../components/Footer";
 import { RecipeDetailSkeleton } from "../components/Skeletons";
-import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
+import { toIngredientList, type MealDBMeal } from "../types/mealdb";
+import type { RecipeContext } from "./recipe-shared";
 
-type ViewMode = "card" | "recipe" | "cooking";
-
-// Silkscreen at 9px, the design's section label. Not `.card-kicker` — that one
-// is the accent-coloured 10px uppercase variant used on deck cards.
-const KICKER = "font-pixel text-[9px] tracking-[0.5px] text-neutral-500";
-
+/**
+ * Layout for the three recipe views. It owns the fetch and nothing else: the
+ * card, the recipe text and the AI chat are sibling routes underneath, so
+ * moving between them is a real navigation rather than a `useState` swap.
+ *
+ * That matters most on a phone. The three used to be one component's `view`
+ * state, which meant the system back gesture skipped straight out of the
+ * recipe, and a reload — which iOS does by itself when it evicts a
+ * backgrounded tab — dropped a cook from step 6 of a walkthrough back to the
+ * card. The transcript survived on the server; the screen didn't.
+ *
+ * Keeping the fetch here rather than in each view is what makes switching
+ * views free: the meal is already in hand, so no view refetches it.
+ */
 function RecipeDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { profile } = useKitchenProfile();
-  const { isFavorite, toggleFavorite } = useFavorites();
 
   const [meal, setMeal] = useState<MealDBMeal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<ViewMode>("card");
 
   useEffect(() => {
     if (!id) return;
@@ -64,182 +63,9 @@ function RecipeDetail() {
     return <div className="p-6 text-sm text-danger">{error ?? "Recipe not found"}</div>;
   }
 
-  const ingredients = toIngredientList(meal);
+  const context: RecipeContext = { meal, ingredients: toIngredientList(meal) };
 
-  if (view === "recipe") {
-    return (
-      <div className="flex min-h-dvh flex-col p-6">
-        <button
-          type="button"
-          onClick={() => setView("card")}
-          className="mb-4 self-start text-[13px] text-neutral-400 hover:text-neutral-200"
-        >
-          ← Back to recipe
-        </button>
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
-          <h1 className="m-0 font-heading text-[20px] font-medium text-text">{meal.strMeal}</h1>
-
-          {/* 16px, not the 13px this used to be. It's the screen a cook stares
-              at longest, read from a phone propped behind a mixing bowl rather
-              than held at arm's length, and it was set smaller than the app's
-              own 15px body. neutral-200 over neutral-300 for the same reason. */}
-          <div className="flex flex-col gap-2">
-            <div className={KICKER}>INGREDIENTS</div>
-            <ul className="flex flex-col gap-1 text-base leading-[1.7] text-neutral-200">
-              {ingredients.map((ingredient, index) => (
-                <li key={index}>
-                  {ingredient.measure} {ingredient.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className={KICKER}>INSTRUCTIONS</div>
-            <div className="whitespace-pre-wrap text-base leading-[1.7] text-neutral-200">{meal.strInstructions}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (view === "cooking") {
-    return (
-      <div className="flex h-dvh flex-col p-6">
-        <button
-          type="button"
-          onClick={() => setView("card")}
-          className="mb-4 self-start text-[13px] text-neutral-400 hover:text-neutral-200"
-        >
-          ← Back to recipe
-        </button>
-        <ChatView
-          recipe={{
-            title: meal.strMeal,
-            cuisine: meal.strArea,
-            ingredients,
-            instructions: meal.strInstructions,
-          }}
-          kitchenProfile={profile}
-          mealId={meal.idMeal}
-        />
-      </div>
-    );
-  }
-
-  const favorite = isFavorite(meal.idMeal);
-  const tags = toTagList(meal);
-
-  const handleToggleFavorite = () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    toggleFavorite(meal.idMeal, meal);
-  };
-
-  const handleCookWithAi = () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    setView("cooking");
-  };
-
-  return (
-    <div className="flex min-h-dvh flex-col">
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="self-start text-[13px] text-neutral-400 hover:text-neutral-200"
-        >
-          ← Back
-        </button>
-
-        {/* Not lazy-loaded: this is the screen's hero, so deferring it would
-            only delay the largest paint. */}
-        <img
-          src={meal.strMealThumb}
-          alt=""
-          className="h-[172px] w-full rounded-md bg-neutral-900 object-cover ring-1 ring-neutral-800 ring-inset"
-        />
-
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="m-0 font-heading text-[20px] font-medium text-text">{meal.strMeal}</h1>
-          {/* Same sizing story as the card's star — see RecipeCard. `-m-2`
-              pulls the padded box back so the glyph still lines up with the
-              title's cap height rather than sitting low. */}
-          <button
-            type="button"
-            onClick={handleToggleFavorite}
-            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-            className={`-m-2 grid h-11 w-11 flex-shrink-0 place-items-center text-[22px] leading-none ${
-              favorite ? "text-accent" : "text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            {favorite ? "★" : "☆"}
-          </button>
-        </div>
-
-        {/* Where the dish is from and what it is are facts about the recipe, so
-            they take the neutral tag; the source's own tags are editorial, so
-            they take the accent. */}
-        <div className="flex flex-wrap gap-3">
-          <span className="tag tag-neutral">{meal.strArea}</span>
-          <span className="tag tag-neutral">{meal.strCategory}</span>
-          {tags.map((tag) => (
-            <span key={tag} className="tag tag-accent">
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {(meal.strYoutube || meal.strSource) && (
-          <div className="flex flex-wrap gap-6 text-xs font-semibold">
-            {meal.strYoutube && (
-              <a href={meal.strYoutube} target="_blank" rel="noreferrer">
-                ▶ Watch video
-              </a>
-            )}
-            {meal.strSource && (
-              <a href={meal.strSource} target="_blank" rel="noreferrer">
-                ↗ View original recipe
-              </a>
-            )}
-          </div>
-        )}
-
-        <div className="mt-3 flex flex-col gap-2">
-          <div className={KICKER}>INGREDIENTS</div>
-          <ul className="flex flex-col text-base leading-[1.7] text-neutral-200">
-            {ingredients.map((ingredient, index) => (
-              <li key={index}>
-                {ingredient.measure} {ingredient.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* `mt-auto` keeps the pair on the bottom edge when the recipe is short
-            enough to leave room, as the mockup has it. `py-4` stays even though
-            `.btn` now has a 44px floor: that floor only applies to coarse
-            pointers, and without the padding these fall back to about 28px on
-            desktop — too small for the screen's primary action either way.
-            Under touch the floor and the padding agree. */}
-        <div className="mt-auto flex gap-3 pt-3">
-          <button type="button" onClick={() => setView("recipe")} className="btn btn-secondary flex-1 py-4">
-            Recipe
-          </button>
-          <button type="button" onClick={handleCookWithAi} className="btn btn-primary flex-1 py-4">
-            Cook with AI
-          </button>
-        </div>
-      </div>
-
-      <Footer />
-    </div>
-  );
+  return <Outlet context={context} />;
 }
 
 export default RecipeDetail;
