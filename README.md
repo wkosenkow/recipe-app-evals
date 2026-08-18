@@ -9,14 +9,14 @@ A cooking companion app: browse recipes, save the ones you like, describe your k
 - **Browse and search recipes** by name or cuisine, served live from [TheMealDB](https://www.themealdb.com/api.php).
 - **Save favorites** to your account. A favorite stores a full snapshot of the recipe, so a saved dish stays readable even if the upstream source changes it.
 - **Describe your kitchen once** in My Kitchen — equipment, dietary restrictions, metric or imperial, skill level, default servings — and every AI conversation uses it.
-- **Cook with AI**: a chat that gives a step-by-step walkthrough of the recipe, converts the quantities to your units, scales toward your servings, adjusts the depth of explanation to your skill level, and proactively flags conflicts between the recipe and your kitchen (a tool you don't have, an ingredient you can't eat).
+- **Cook with AI**: a chat that gives a step-by-step walkthrough of the recipe, converts the quantities to your units, scales toward your servings, adjusts the depth of explanation to your skill level, and proactively flags conflicts between the recipe and your kitchen (a tool you don't have, an ingredient you can't eat). The reply streams in as it is written, and the conversation is saved per recipe — come back to a dish later and you pick up where you left off.
 
 Recipe browsing is open to everyone. Favorites, My Kitchen, and the AI chat require an account.
 
 ## Stack
 
-**Frontend** — React 19, TypeScript, Vite, Tailwind CSS 4, React Router 7
-**Backend** — Express 5, TypeScript, Mongoose (MongoDB), Zod-validated env config, JWT sessions
+**Frontend** — React 19, TypeScript, Vite, Tailwind CSS 4, React Router 7, self-hosted Inter/Silkscreen and Phosphor icons
+**Backend** — Express 5, TypeScript, Mongoose (MongoDB), Zod-validated request and env schemas, JWT-in-cookie sessions, Helmet, per-IP rate limiting
 **LLM** — Ollama locally (free, no API key needed), Anthropic Claude in production, selected by `CHAT_PROVIDER`
 **Deployment** — Render (single web service), MongoDB Atlas
 
@@ -26,7 +26,9 @@ A few design decisions that aren't obvious from reading the code:
 
 **Recipes are never stored.** They're fetched live from TheMealDB by the browser on every view. TheMealDB has no servings field and no metric/imperial split — just free-text measures like `"1 tbls"` — which is exactly why the app leans on the LLM to interpret and convert quantities rather than trying to compute them in TypeScript.
 
-**A small hand-authored overlay adds what TheMealDB lacks.** `frontend/src/lib/recipe-enrichment.ts` carries equipment requirements, allergen flags, and substitution notes for 13 curated recipes. Recipes outside that set still work — the chat just receives the raw ingredient and instruction text.
+**The reply streams, and says when it has finished.** `/api/chat` answers with Server-Sent Events: a run of `delta` frames closed by exactly one `done` or `error`. That terminator is the point — without it, a dropped connection is indistinguishable from a completed reply, and the client would file a truncated walkthrough away as finished and later replay it to the model as something it actually said. The server also stops generating the moment the reader disconnects, since an unread reply costs the same as a read one.
+
+**A conversation belongs to a recipe.** Cooking chats are saved per user per recipe, so locking your phone mid-recipe and coming back later resumes where you stopped instead of starting the walkthrough over. What's stored is the raw transcript rather than a summary: summarising costs an extra model call, loses detail, and can't put the screen back the way you left it.
 
 **The kitchen profile drives the prompt, not the code.** `backend/src/modules/chat/chat.prompt.ts` sends the whole profile on every turn along with instructions tied to each field, and lets the model reason about conflicts. This is deliberate: pre-computing "you're missing a stand mixer" in TypeScript would need a closed vocabulary of equipment, and equipment and diet are free text.
 
@@ -46,7 +48,11 @@ A few design decisions that aren't obvious from reading the code:
 | `DELETE` | `/api/favorites/:mealId` | ✔ | Remove a favorite |
 | `GET` | `/api/kitchen-profile` | ✔ | The user's kitchen profile, or defaults |
 | `PUT` | `/api/kitchen-profile` | ✔ | Create or update it |
-| `POST` | `/api/chat` | ✔ | Send a turn, get the assistant's reply |
+| `GET` | `/api/cooking-sessions/:mealId` | ✔ | The saved conversation for a recipe, or an empty one |
+| `PUT` | `/api/cooking-sessions/:mealId` | ✔ | Save the conversation for a recipe |
+| `POST` | `/api/chat` | ✔ | Send a turn, stream back the assistant's reply |
+
+Auth is a JWT in an `httpOnly` cookie, so the token is never reachable from JavaScript. The three endpoints that cost money or invite abuse are rate limited per IP: the chat, and both auth entry points.
 
 ## Running locally
 
