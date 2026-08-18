@@ -58,13 +58,17 @@ export interface MealIngredient {
   measure: string;
 }
 
-export const toTagList = (meal: MealDBMeal): string[] =>
+// Both take a partial meal on purpose: TheMealDB's filter endpoint returns
+// only id/name/thumbnail, so a list item may legitimately be missing every
+// field these read. Each then yields an empty list rather than throwing, and
+// the caller decides whether "nothing to show" means hide the badge.
+export const toTagList = (meal: Partial<MealDBMeal>): string[] =>
   (meal.strTags ?? "")
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
 
-export const toIngredientList = (meal: MealDBMeal): MealIngredient[] => {
+export const toIngredientList = (meal: Partial<MealDBMeal>): MealIngredient[] => {
   const ingredients: MealIngredient[] = [];
 
   for (let i = 1; i <= 20; i++) {
