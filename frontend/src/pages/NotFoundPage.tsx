@@ -5,14 +5,16 @@ import Header from "../components/Header";
 
 function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950">
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
-        <div className="font-mono text-sm text-gray-600">404</div>
-        <div className="text-lg font-semibold text-gray-100">That page doesn&apos;t exist</div>
-        <div className="text-sm text-gray-500">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+        {/* Silkscreen carries the numeral, the same pixel face the cuisine
+            labels and counters use. */}
+        <div className="font-pixel text-sm text-neutral-600">404</div>
+        <h1 className="m-0 font-heading text-[20px] font-medium text-text">That page doesn&apos;t exist</h1>
+        <div className="text-sm text-neutral-500">
           The link may be broken, or the page may have moved.{" "}
-          <Link to="/" className="font-semibold text-blue-400 hover:underline">
+          <Link to="/" className="font-semibold">
             Browse recipes
           </Link>
         </div>

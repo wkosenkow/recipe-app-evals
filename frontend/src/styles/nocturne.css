@@ -1,0 +1,256 @@
+/* Nocturne — the component layer of the design system, ported from the Claude
+ * Design project "Логотип для приложения"
+ * (9a3a7c77-9dcb-4850-a53c-c5b27186c6fd), file
+ * `_ds/nocturne-c0973e89-84e6-4d86-9237-1d8982023d4f/styles.css`.
+ *
+ * Deliberate differences from the source, listed so re-syncing stays a diff
+ * rather than an investigation:
+ *
+ * 1. The `:root` token block lives in `index.css` inside Tailwind's `@theme`
+ *    instead of here. That emits the same custom properties *and* generates
+ *    matching utilities (`bg-surface`, `text-accent-300`, `rounded-lg`), so
+ *    there is one source for both this file and the markup.
+ * 2. Everything is wrapped in `@layer base` / `@layer components`. Tailwind 4
+ *    orders its layers `theme, base, components, utilities`, so a utility in
+ *    the markup wins over a component class here — unlayered CSS would beat
+ *    every utility and make `class="btn flex-1"` behave unpredictably.
+ * 3. `.seg-opt` and `.tag-outline` are keyed off `aria-checked` / `:disabled`
+ *    rather than the source's hidden `<input type="radio">` and
+ *    `:has(input:checked)`. Both are `<button>` here — the segmented controls
+ *    and the chat's quick picks were already buttons — so they also reset
+ *    `border`, `background` and `font-family`, which the source's non-button
+ *    markup never needed.
+ * 4. `.seg-opt`'s selected state follows the Kitchenette mockup (an
+ *    accent-900 fill) rather than the system's default accent ring — see the
+ *    note at the rule itself.
+ * 5. Only the classes this app uses are ported. `.nav`, `.table`, `.dialog`,
+ *    `.radio` and `.tag-accent-2` are left in the design project; add them
+ *    from the source verbatim if a screen ever needs them.
+ *
+ * The webfonts are npm packages (`@fontsource-variable/inter`,
+ * `@fontsource/silkscreen`) rather than the source's Google Fonts `@import`,
+ * so production has no third-party font host in the critical path.
+ */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0 0 var(--space-2);
+  }
+  h1 { font-size: 42px; }
+  h2 { font-size: 32px; }
+  h3 { font-size: 25px; }
+  h4 { font-size: 20px; }
+  h5 { font-size: 16px; }
+  h6 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  p { margin: 0 0 var(--space-3); }
+  img { display: block; max-width: 100%; }
+  figure { margin: 0; }
+
+  /* Accent at paragraph size only clears 3:1 against this ground, so links
+   * take the deep ramp step. This is the mockup's own `helmet` override. */
+  a {
+    color: var(--color-accent-300);
+    text-decoration: none;
+    text-underline-offset: 3px;
+  }
+  a:hover { color: var(--color-accent-200); }
+
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+}
+
+@layer components {
+  .text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+  /* Photographs go through this: anything darker than the page falls away. */
+  .lighten { mix-blend-mode: lighten; background-color: transparent; }
+
+  /* — rules —
+   * Rules fade to transparent at both ends over 48px rather than stopping
+   * cleanly — a Nocturne signature. Box outlines and in-control separators
+   * stay solid. */
+  .hr {
+    height: 1px;
+    border: 0;
+    margin: var(--space-4) 0;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-divider) 48px,
+      var(--color-divider) calc(100% - 48px),
+      transparent
+    );
+  }
+
+  /* — buttons — the primary is an accent outline, never a fill — */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    font-size: 14px;
+    line-height: 1.2;
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid transparent;
+    padding: var(--space-2) calc(var(--space-3) * 1.2);
+    border-radius: var(--radius-md);
+  }
+  .btn svg { display: block; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { color: var(--color-accent); border-color: var(--color-accent); }
+  .btn-primary:not(:disabled):hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+  .btn-primary:not(:disabled):active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+  .btn-secondary { border-color: var(--color-divider); }
+  .btn-secondary:not(:disabled):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+  .btn-secondary:not(:disabled):active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+  .btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); }
+  .btn-ghost:not(:disabled):hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+  .btn-ghost:not(:disabled):active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+  .btn-icon { width: 36px; height: 36px; padding: 0; }
+  .btn-block { width: 100%; margin-top: var(--space-2); }
+
+  /* — forms — */
+  .field > label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 5px;
+    color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  }
+  .input {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--color-text);
+    caret-color: var(--color-accent);
+    background: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+  .input::placeholder { color: var(--color-neutral-600); }
+  .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+  .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+  textarea.input { min-height: 90px; resize: vertical; }
+
+  .seg {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+  .seg-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font-family: inherit;
+  }
+  .seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+  /* The Kitchenette mockup overrides the system's default here — the source
+   * marks the chosen option with an accent ring, the mockup fills it with
+   * accent-900 and sets the label to accent-300. The mockup wins because it's
+   * the spec for this app, and the rule lives here rather than on the screens
+   * so the two segmented controls can't drift apart. */
+  .seg-opt[aria-checked="true"] {
+    background: var(--color-accent-900);
+    color: var(--color-accent-300);
+  }
+  .seg-opt:not([aria-checked="true"]):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+  .seg-opt:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+  /* — cards — */
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+  .card-kicker {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .card-title {
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    font-size: 17px;
+    line-height: 1.2;
+  }
+  .card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  }
+  .elev-sm { box-shadow: var(--shadow-sm); }
+  .elev-md { box-shadow: var(--shadow-md); }
+  .elev-lg { box-shadow: var(--shadow-lg); }
+
+  /* — tags — */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 3px 10px;
+    border-radius: calc(var(--radius-md) * 0.75);
+  }
+  .tag-accent { background: var(--color-accent-800); color: var(--color-accent-100); }
+  .tag-neutral { background: var(--color-neutral-800); color: var(--color-neutral-100); }
+  .tag-outline {
+    background: transparent;
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .tag-outline:not(:disabled):hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+  .tag-outline:disabled { opacity: 0.45; cursor: not-allowed; }
+}

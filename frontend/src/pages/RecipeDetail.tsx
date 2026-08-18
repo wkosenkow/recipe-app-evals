@@ -11,6 +11,10 @@ import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
 
 type ViewMode = "card" | "recipe" | "cooking";
 
+// Silkscreen at 9px, the design's section label. Not `.card-kicker` — that one
+// is the accent-coloured 10px uppercase variant used on deck cards.
+const KICKER = "font-pixel text-[9px] tracking-[0.5px] text-neutral-500";
+
 function RecipeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -52,26 +56,32 @@ function RecipeDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-4 text-sm text-gray-500">Loading…</div>;
+    return <div className="p-6 text-sm text-neutral-500">Loading…</div>;
   }
 
   if (error || !meal) {
-    return <div className="p-4 text-sm text-red-500">{error ?? "Recipe not found"}</div>;
+    return <div className="p-6 text-sm text-danger">{error ?? "Recipe not found"}</div>;
   }
+
+  const ingredients = toIngredientList(meal);
 
   if (view === "recipe") {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-950 p-4">
-        <button type="button" onClick={() => setView("card")} className="mb-4 self-start text-sm text-gray-400">
+      <div className="flex min-h-screen flex-col p-6">
+        <button
+          type="button"
+          onClick={() => setView("card")}
+          className="mb-4 self-start text-[13px] text-neutral-400 hover:text-neutral-200"
+        >
           ← Back to recipe
         </button>
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
-          <div className="text-lg font-semibold text-gray-100">{meal.strMeal}</div>
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
+          <h1 className="m-0 font-heading text-[20px] font-medium text-text">{meal.strMeal}</h1>
 
           <div className="flex flex-col gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ingredients</div>
-            <ul className="flex flex-col gap-1 text-sm text-gray-300">
-              {toIngredientList(meal).map((ingredient, index) => (
+            <div className={KICKER}>INGREDIENTS</div>
+            <ul className="flex flex-col gap-1 text-[13px] leading-[1.7] text-neutral-300">
+              {ingredients.map((ingredient, index) => (
                 <li key={index}>
                   {ingredient.measure} {ingredient.name}
                 </li>
@@ -80,8 +90,10 @@ function RecipeDetail() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Instructions</div>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">{meal.strInstructions}</div>
+            <div className={KICKER}>INSTRUCTIONS</div>
+            <div className="whitespace-pre-wrap text-[13px] leading-[1.7] text-neutral-300">
+              {meal.strInstructions}
+            </div>
           </div>
         </div>
       </div>
@@ -90,15 +102,19 @@ function RecipeDetail() {
 
   if (view === "cooking") {
     return (
-      <div className="flex h-screen flex-col bg-gray-950 p-4">
-        <button type="button" onClick={() => setView("card")} className="mb-4 self-start text-sm text-gray-400">
+      <div className="flex h-screen flex-col p-6">
+        <button
+          type="button"
+          onClick={() => setView("card")}
+          className="mb-4 self-start text-[13px] text-neutral-400 hover:text-neutral-200"
+        >
           ← Back to recipe
         </button>
         <ChatView
           recipe={{
             title: meal.strMeal,
             cuisine: meal.strArea,
-            ingredients: toIngredientList(meal),
+            ingredients,
             instructions: meal.strInstructions,
           }}
           kitchenProfile={profile}
@@ -127,81 +143,87 @@ function RecipeDetail() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950">
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-        <button type="button" onClick={() => navigate(-1)} className="self-start text-sm text-gray-400">
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="self-start text-[13px] text-neutral-400 hover:text-neutral-200"
+        >
           ← Back
         </button>
 
-        <img src={meal.strMealThumb} alt="" className="h-48 w-full rounded-md bg-gray-800 object-cover" />
+        {/* Not lazy-loaded: this is the screen's hero, so deferring it would
+            only delay the largest paint. */}
+        <img
+          src={meal.strMealThumb}
+          alt=""
+          className="h-[172px] w-full rounded-md bg-neutral-900 object-cover ring-1 ring-neutral-800 ring-inset"
+        />
 
-        <div className="flex items-start justify-between gap-3">
-          <div className="text-xl font-semibold text-gray-100">{meal.strMeal}</div>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="m-0 font-heading text-[20px] font-medium text-text">{meal.strMeal}</h1>
           <button
             type="button"
             onClick={handleToggleFavorite}
             aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-            className={`text-2xl leading-none ${favorite ? "text-yellow-400" : "text-gray-600"}`}
+            className={`flex-shrink-0 text-[22px] leading-none ${
+              favorite ? "text-accent" : "text-neutral-600 hover:text-neutral-400"
+            }`}
           >
             {favorite ? "★" : "☆"}
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
-            {meal.strArea}
-          </span>
-          <span className="rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
-            {meal.strCategory}
-          </span>
+        {/* Where the dish is from and what it is are facts about the recipe, so
+            they take the neutral tag; the source's own tags are editorial, so
+            they take the accent. */}
+        <div className="flex flex-wrap gap-3">
+          <span className="tag tag-neutral">{meal.strArea}</span>
+          <span className="tag tag-neutral">{meal.strCategory}</span>
           {tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-purple-500/40 bg-purple-500/15 px-3 py-1 text-xs font-semibold text-purple-300"
-            >
+            <span key={tag} className="tag tag-accent">
               {tag}
             </span>
           ))}
         </div>
 
         {(meal.strYoutube || meal.strSource) && (
-          <div className="flex flex-wrap gap-4 text-xs">
+          <div className="flex flex-wrap gap-6 text-xs font-semibold">
             {meal.strYoutube && (
-              <a
-                href={meal.strYoutube}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-blue-400 hover:underline"
-              >
+              <a href={meal.strYoutube} target="_blank" rel="noreferrer">
                 ▶ Watch video
               </a>
             )}
             {meal.strSource && (
-              <a
-                href={meal.strSource}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-blue-400 hover:underline"
-              >
+              <a href={meal.strSource} target="_blank" rel="noreferrer">
                 ↗ View original recipe
               </a>
             )}
           </div>
         )}
 
-        <div className="mt-2 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setView("recipe")}
-            className="flex-1 rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-200"
-          >
+        <div className="mt-3 flex flex-col gap-2">
+          <div className={KICKER}>INGREDIENTS</div>
+          <ul className="flex flex-col text-[13px] leading-[1.7] text-neutral-300">
+            {ingredients.map((ingredient, index) => (
+              <li key={index}>
+                {ingredient.measure} {ingredient.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* `mt-auto` keeps the pair on the bottom edge when the recipe is short
+            enough to leave room, as the mockup has it. The vertical padding is
+            larger than the design system's dense default on purpose: at `.btn`
+            defaults these land around 28px tall, well under a thumb-sized
+            target. */}
+        <div className="mt-auto flex gap-3 pt-3">
+          <button type="button" onClick={() => setView("recipe")} className="btn btn-secondary flex-1 py-4">
             Recipe
           </button>
-          <button
-            type="button"
-            onClick={handleCookWithAi}
-            className="flex-1 rounded-md bg-blue-500 px-4 py-3 text-sm font-semibold text-white"
-          >
+          <button type="button" onClick={handleCookWithAi} className="btn btn-primary flex-1 py-4">
             Cook with AI
           </button>
         </div>
