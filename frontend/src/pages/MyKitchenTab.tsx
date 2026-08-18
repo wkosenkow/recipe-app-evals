@@ -23,7 +23,7 @@ function MyKitchenTab() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-dvh flex-col">
         <Header />
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
           <div className="py-10 text-center text-sm text-neutral-500">
@@ -43,7 +43,7 @@ function MyKitchenTab() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <Header />
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
         {loading && <div className="text-sm text-neutral-500">Loading…</div>}

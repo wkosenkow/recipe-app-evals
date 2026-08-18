@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <!-- viewport-fit=cover lets the page paint under the notch and home
+         indicator, which is what makes env(safe-area-inset-*) report anything
+         other than 0. interactive-widget=resizes-content shrinks the viewport
+         when the on-screen keyboard opens instead of sliding the page up, so
+         the chat's compose row stays put above it. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <!-- Colours the browser chrome to match the app's ground, so the status
+         bar doesn't sit as a white band above a dark page. -->
+    <meta name="theme-color" content="#161826" />
+    <title>Kitchen Companion</title>
   </head>
   <body>
     <div id="root"></div>

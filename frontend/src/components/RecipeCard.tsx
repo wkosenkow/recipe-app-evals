@@ -87,12 +87,19 @@ function RecipeCard({
           )}
         </div>
       </Link>
+      {/* A box around the glyph, not a bare 17px character: this sits flush
+          against a link covering the rest of the card, and a thumb is about
+          45px wide — missing by a few pixels navigated away instead of saving,
+          with no undo. `h-11` is 11 spacing steps, so it follows the density:
+          44px under a coarse pointer (where it matters) and 30.8px with a
+          mouse, which keeps the card compact on desktop. `-my-1` stops the
+          taller control from stretching the card's own height. */}
       <button
         type="button"
         onClick={onToggleFavorite}
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        className={`flex-shrink-0 text-[17px] leading-none ${
-          isFavorite ? "text-accent" : "text-neutral-600 hover:text-neutral-400"
+        className={`-my-1 grid h-11 w-11 flex-shrink-0 place-items-center text-[22px] leading-none ${
+          isFavorite ? "text-accent" : "text-neutral-500 hover:text-neutral-300"
         }`}
       >
         {isFavorite ? "★" : "☆"}

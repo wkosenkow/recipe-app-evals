@@ -27,9 +27,12 @@ const TRUNCATED_TEXT = "The reply broke off partway.";
 // version's real problem — a box sized to streamed content reflows its own
 // width on every delta, so the reader watches the container jump as much as
 // the text. Plain text just grows downward.
+// 16px, up from 13px. This is the walkthrough a cook reads mid-task, at more
+// than arm's length, and it was the app's smallest body text while being its
+// longest.
 const USER_BUBBLE =
-  "max-w-[85%] rounded-md bg-accent-900 px-4 py-3 text-[13px] leading-[1.6] whitespace-pre-wrap text-text ring-1 ring-inset ring-accent-700";
-const ASSISTANT_TEXT = "text-[13px] leading-[1.6] text-text";
+  "max-w-[85%] rounded-md bg-accent-900 px-4 py-3 text-base leading-[1.6] whitespace-pre-wrap text-text ring-1 ring-inset ring-accent-700";
+const ASSISTANT_TEXT = "text-base leading-[1.6] text-text";
 
 // The system prompt never asks for markdown, but the model reaches for it
 // anyway — numbered steps, bulleted ingredients, an occasional "**Note:**" —
@@ -50,28 +53,31 @@ const MARKDOWN_COMPONENTS: Components = {
   ul: ({ node: _node, ...props }) => <ul className="mb-3 list-disc space-y-1 pl-5 last:mb-0" {...props} />,
   // pl-8, not ul's pl-5: an outside decimal marker needs room for its own
   // digits before the gap to the text, and a recipe walkthrough routinely
-  // runs past 9 steps. Measured "17." at ~14.8px against 13px Inter — pl-5's
-  // 14px left it clipping its own leading digit against the scroll
-  // container's edge (overflow-y-auto computes overflow-x to auto too, which
-  // clips at 0 rather than letting the marker bleed left). pl-8 leaves margin
-  // to spare, and a bulleted list's single-glyph marker doesn't need it.
+  // runs past 9 steps. At pl-5 a two-digit marker clipped its leading digit
+  // against the scroll container's edge (overflow-y-auto computes overflow-x
+  // to auto too, which clips at 0 rather than letting the marker bleed left).
+  // pl-8 is 22.4px with a mouse and 32px under touch, against roughly 18px
+  // for "17." at the 16px body size — margin to spare in both. A bulleted
+  // list's single-glyph marker doesn't need it.
   ol: ({ node: _node, ...props }) => <ol className="mb-3 list-decimal space-y-1 pl-8 last:mb-0" {...props} />,
   li: ({ node: _node, ...props }) => <li className="pl-1" {...props} />,
   strong: ({ node: _node, ...props }) => <strong className="font-semibold text-text" {...props} />,
+  // Sized against the 16px body below, not the old 13px — at the previous
+  // 14px these headings would now be *smaller* than the text they head.
   h1: ({ node: _node, ...props }) => (
-    <p className="mt-4 mb-2 font-heading text-[14px] font-semibold text-text first:mt-0" {...props} />
+    <p className="mt-4 mb-2 font-heading text-[19px] font-semibold text-text first:mt-0" {...props} />
   ),
   h2: ({ node: _node, ...props }) => (
-    <p className="mt-4 mb-2 font-heading text-[14px] font-semibold text-text first:mt-0" {...props} />
+    <p className="mt-4 mb-2 font-heading text-[18px] font-semibold text-text first:mt-0" {...props} />
   ),
   h3: ({ node: _node, ...props }) => (
-    <p className="mt-3 mb-2 font-heading text-[13px] font-semibold text-text first:mt-0" {...props} />
+    <p className="mt-3 mb-2 font-heading text-[17px] font-semibold text-text first:mt-0" {...props} />
   ),
   code: ({ node: _node, ...props }) => (
-    <code className="rounded-sm bg-neutral-900 px-1 py-0.5 font-mono text-[12px] text-text" {...props} />
+    <code className="rounded-sm bg-neutral-900 px-1 py-0.5 font-mono text-[14px] text-text" {...props} />
   ),
   pre: ({ node: _node, ...props }) => (
-    <pre className="mb-3 overflow-x-auto rounded-md bg-neutral-900 p-3 text-[12px] last:mb-0" {...props} />
+    <pre className="mb-3 overflow-x-auto rounded-md bg-neutral-900 p-3 text-[14px] last:mb-0" {...props} />
   ),
   blockquote: ({ node: _node, ...props }) => (
     <blockquote className="mb-3 border-l-2 border-neutral-700 pl-3 text-neutral-400 last:mb-0" {...props} />
@@ -270,7 +276,7 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
           </div>
         )}
 
-        {loading && !streamingText && <div className="text-[13px] text-neutral-500">Thinking…</div>}
+        {loading && !streamingText && <div className="text-base text-neutral-500">Thinking…</div>}
 
         {error && (
           <div role="alert" className="flex flex-col items-center gap-1 py-2 text-center text-sm text-danger">

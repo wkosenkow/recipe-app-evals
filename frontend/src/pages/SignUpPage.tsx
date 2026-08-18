@@ -36,7 +36,7 @@ function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-8 p-6">
       <Logo />
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-6">
         <h1 className="m-0 font-heading text-[20px] font-medium text-text">Sign up</h1>

@@ -13,7 +13,7 @@ function FavoritesTab() {
   const { favorites, loading, error, toggleFavorite } = useFavorites();
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <Header />
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
         {!user && (

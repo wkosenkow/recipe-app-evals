@@ -68,7 +68,7 @@ function RecipeDetail() {
 
   if (view === "recipe") {
     return (
-      <div className="flex min-h-screen flex-col p-6">
+      <div className="flex min-h-dvh flex-col p-6">
         <button
           type="button"
           onClick={() => setView("card")}
@@ -79,9 +79,13 @@ function RecipeDetail() {
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
           <h1 className="m-0 font-heading text-[20px] font-medium text-text">{meal.strMeal}</h1>
 
+          {/* 16px, not the 13px this used to be. It's the screen a cook stares
+              at longest, read from a phone propped behind a mixing bowl rather
+              than held at arm's length, and it was set smaller than the app's
+              own 15px body. neutral-200 over neutral-300 for the same reason. */}
           <div className="flex flex-col gap-2">
             <div className={KICKER}>INGREDIENTS</div>
-            <ul className="flex flex-col gap-1 text-[13px] leading-[1.7] text-neutral-300">
+            <ul className="flex flex-col gap-1 text-base leading-[1.7] text-neutral-200">
               {ingredients.map((ingredient, index) => (
                 <li key={index}>
                   {ingredient.measure} {ingredient.name}
@@ -92,9 +96,7 @@ function RecipeDetail() {
 
           <div className="flex flex-col gap-2">
             <div className={KICKER}>INSTRUCTIONS</div>
-            <div className="whitespace-pre-wrap text-[13px] leading-[1.7] text-neutral-300">
-              {meal.strInstructions}
-            </div>
+            <div className="whitespace-pre-wrap text-base leading-[1.7] text-neutral-200">{meal.strInstructions}</div>
           </div>
         </div>
       </div>
@@ -103,7 +105,7 @@ function RecipeDetail() {
 
   if (view === "cooking") {
     return (
-      <div className="flex h-screen flex-col p-6">
+      <div className="flex h-dvh flex-col p-6">
         <button
           type="button"
           onClick={() => setView("card")}
@@ -145,7 +147,7 @@ function RecipeDetail() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
         <button
           type="button"
@@ -165,12 +167,15 @@ function RecipeDetail() {
 
         <div className="flex items-start justify-between gap-4">
           <h1 className="m-0 font-heading text-[20px] font-medium text-text">{meal.strMeal}</h1>
+          {/* Same sizing story as the card's star — see RecipeCard. `-m-2`
+              pulls the padded box back so the glyph still lines up with the
+              title's cap height rather than sitting low. */}
           <button
             type="button"
             onClick={handleToggleFavorite}
             aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-            className={`flex-shrink-0 text-[22px] leading-none ${
-              favorite ? "text-accent" : "text-neutral-600 hover:text-neutral-400"
+            className={`-m-2 grid h-11 w-11 flex-shrink-0 place-items-center text-[22px] leading-none ${
+              favorite ? "text-accent" : "text-neutral-500 hover:text-neutral-300"
             }`}
           >
             {favorite ? "★" : "☆"}
@@ -207,7 +212,7 @@ function RecipeDetail() {
 
         <div className="mt-3 flex flex-col gap-2">
           <div className={KICKER}>INGREDIENTS</div>
-          <ul className="flex flex-col text-[13px] leading-[1.7] text-neutral-300">
+          <ul className="flex flex-col text-base leading-[1.7] text-neutral-200">
             {ingredients.map((ingredient, index) => (
               <li key={index}>
                 {ingredient.measure} {ingredient.name}
@@ -217,10 +222,11 @@ function RecipeDetail() {
         </div>
 
         {/* `mt-auto` keeps the pair on the bottom edge when the recipe is short
-            enough to leave room, as the mockup has it. The vertical padding is
-            larger than the design system's dense default on purpose: at `.btn`
-            defaults these land around 28px tall, well under a thumb-sized
-            target. */}
+            enough to leave room, as the mockup has it. `py-4` stays even though
+            `.btn` now has a 44px floor: that floor only applies to coarse
+            pointers, and without the padding these fall back to about 28px on
+            desktop — too small for the screen's primary action either way.
+            Under touch the floor and the padding agree. */}
         <div className="mt-auto flex gap-3 pt-3">
           <button type="button" onClick={() => setView("recipe")} className="btn btn-secondary flex-1 py-4">
             Recipe
