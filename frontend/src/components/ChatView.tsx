@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ChatStreamError, streamChatMessage, type ChatMessage, type ChatRecipe } from "../lib/chat";
-import type { RecipeEnrichment } from "../lib/recipe-enrichment";
 import type { KitchenProfile } from "../types/kitchen";
 
 const QUICK_PICKS = ["No dairy", "Fewer servings", "Different spices", "More detail, please"];
@@ -14,11 +13,10 @@ const TRUNCATED_TEXT = "The reply broke off partway.";
 
 interface ChatViewProps {
   recipe: ChatRecipe;
-  enrichment?: RecipeEnrichment;
   kitchenProfile: KitchenProfile;
 }
 
-function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
+function ChatView({ recipe, kitchenProfile }: ChatViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,7 +39,7 @@ function ChatView({ recipe, enrichment, kitchenProfile }: ChatViewProps) {
 
     try {
       const reply = await streamChatMessage(
-        { recipe, enrichment, kitchenProfile, ...turn },
+        { recipe, kitchenProfile, ...turn },
         {
           // Deltas already in flight when we cancelled must not land: the
           // buffer now belongs to a newer request, and appending to it would

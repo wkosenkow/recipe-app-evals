@@ -1,5 +1,3 @@
-import type { RecipeEnrichment } from "../lib/recipe-enrichment";
-
 export interface Favorite {
   _id: string;
   mealId: string;
@@ -8,5 +6,4 @@ export interface Favorite {
   thumbnail: string;
   ingredients: { name: string; measure: string }[];
   instructions: string;
-  enrichment?: RecipeEnrichment;
 }

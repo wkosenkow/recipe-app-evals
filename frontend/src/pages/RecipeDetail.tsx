@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { lookupMealById } from "../lib/mealdb";
-import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
 import ChatView from "../components/ChatView";
 import Footer from "../components/Footer";
 import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
@@ -60,8 +59,6 @@ function RecipeDetail() {
     return <div className="p-4 text-sm text-red-500">{error ?? "Recipe not found"}</div>;
   }
 
-  const enrichment = RECIPE_ENRICHMENT[meal.idMeal];
-
   if (view === "recipe") {
     return (
       <div className="flex min-h-screen flex-col bg-gray-950 p-4">
@@ -104,7 +101,6 @@ function RecipeDetail() {
             ingredients: toIngredientList(meal),
             instructions: meal.strInstructions,
           }}
-          enrichment={enrichment}
           kitchenProfile={profile}
         />
       </div>

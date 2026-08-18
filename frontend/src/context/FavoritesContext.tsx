@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useAuth } from "./AuthContext";
 import { apiDelete, apiGet, apiPost } from "../lib/api";
 import { lookupMealById } from "../lib/mealdb";
-import { RECIPE_ENRICHMENT } from "../lib/recipe-enrichment";
 import { toIngredientList, type MealDBMeal } from "../types/mealdb";
 import type { Favorite } from "../types/favorite";
 
@@ -61,7 +60,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
           thumbnail: fullMeal.strMealThumb,
           ingredients: toIngredientList(fullMeal),
           instructions: fullMeal.strInstructions,
-          enrichment: RECIPE_ENRICHMENT[mealId],
         });
 
         setFavorites((prev) => [data.favorite, ...prev]);
