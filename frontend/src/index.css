@@ -80,6 +80,19 @@
   --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0, 0, 0, 0.65);
 }
 
+/* Toasts rise a few pixels as they fade in — enough to read as "this just
+ * appeared" without turning a confirmation into an animation. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Nocturne's own `--space-*` names, which `styles/nocturne.css` uses for its
  * component padding and gaps. Tailwind's `--spacing` above covers the markup
  * but not the ported stylesheet, and an undefined `var()` silently drops the

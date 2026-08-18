@@ -5,6 +5,7 @@ import { useFavorites } from "../context/FavoritesContext";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
+import { RecipeListSkeleton } from "../components/Skeletons";
 
 function FavoritesTab() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ function FavoritesTab() {
           </div>
         )}
 
-        {user && loading && <div className="text-sm text-neutral-500">Loading…</div>}
+        {user && loading && <RecipeListSkeleton count={3} label="Loading favorites" />}
         {user && error && <div className="text-sm text-danger">{error}</div>}
 
         {user && !loading && !error && favorites.length === 0 && (
