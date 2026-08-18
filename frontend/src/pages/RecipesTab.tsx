@@ -7,12 +7,13 @@ import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
-import type { MealDBSummary } from "../types/mealdb";
+import { toIngredientList, toTagList, type MealDBMeal, type MealDBSummary } from "../types/mealdb";
 
-// Search returns whole meals (which carry strArea); the cuisine filter returns
-// summaries that don't. One optional field covers both, and lets a card label
-// itself when the data happens to be there.
-type RecipeListItem = MealDBSummary & { strArea?: string };
+// Search returns whole meals; the cuisine filter returns summaries carrying
+// only id/name/thumbnail. Modelling the extras as optional says exactly that,
+// and lets each card show whatever its own source happened to provide rather
+// than pretending the two endpoints are interchangeable.
+type RecipeListItem = MealDBSummary & Partial<MealDBMeal>;
 
 function RecipesTab() {
   const navigate = useNavigate();
@@ -206,14 +207,16 @@ function RecipesTab() {
               key={meal.idMeal}
               title={meal.strMeal}
               thumbnail={meal.strMealThumb}
-              // In cuisine mode every card belongs to the selected cuisine —
-              // the filter endpoint just doesn't repeat it per meal. Labelling
-              // them anyway keeps the cards uniform and still reads correctly
-              // once the chip has scrolled out of view.
+              // Both endpoints carry strArea today; the selected cuisine is
+              // only a fallback for a row that somehow arrives without one.
               cuisine={meal.strArea ?? (cuisine !== "All" ? cuisine : undefined)}
+              category={meal.strCategory}
+              tags={toTagList(meal)}
+              ingredientCount={toIngredientList(meal).length}
+              hasVideo={Boolean(meal.strYoutube)}
               isFavorite={isFavorite(meal.idMeal)}
               onToggleFavorite={() => handleToggleFavorite(meal.idMeal)}
-              onOpen={() => navigate(`/recipes/${meal.idMeal}`)}
+              to={`/recipes/${meal.idMeal}`}
             />
           ))}
         </div>

@@ -45,9 +45,13 @@ function FavoritesTab() {
                 title={favorite.title}
                 thumbnail={favorite.thumbnail}
                 cuisine={favorite.cuisine}
+                // The saved snapshot carries the full ingredient list but not
+                // category/tags/video — those were never part of what a
+                // favorite stores.
+                ingredientCount={favorite.ingredients.length}
                 isFavorite
                 onToggleFavorite={() => toggleFavorite(favorite.mealId)}
-                onOpen={() => navigate(`/recipes/${favorite.mealId}`)}
+                to={`/recipes/${favorite.mealId}`}
               />
             ))}
         </div>
