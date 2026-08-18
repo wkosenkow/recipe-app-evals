@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 import { ChatStreamError, MAX_TURN_LENGTH, streamChatMessage, type ChatMessage, type ChatRecipe } from "../lib/chat";
 import type { KitchenProfile } from "../types/kitchen";
@@ -26,7 +28,64 @@ const TRUNCATED_TEXT = "The reply broke off partway.";
 // the text. Plain text just grows downward.
 const USER_BUBBLE =
   "max-w-[85%] rounded-md bg-accent-900 px-4 py-3 text-[13px] leading-[1.6] whitespace-pre-wrap text-text ring-1 ring-inset ring-accent-700";
-const ASSISTANT_TEXT = "text-[13px] leading-[1.6] whitespace-pre-wrap text-text";
+const ASSISTANT_TEXT = "text-[13px] leading-[1.6] text-text";
+
+// The system prompt never asks for markdown, but the model reaches for it
+// anyway — numbered steps, bulleted ingredients, an occasional "**Note:**" —
+// because it's the natural way to write a recipe walkthrough. Without a
+// renderer that showed up as literal asterisks at the start of every line.
+//
+// remark-breaks, not the CommonMark default: a bare "\n" would otherwise
+// collapse to a single space (a "soft break"), and the model separates lines
+// within a paragraph — not just list items — by a single newline rather than
+// a blank line. Losing those would run sentences together.
+//
+// Headings render as weighted paragraphs, not literal <h1>-<h3>: the Cook
+// with AI screen carries no page heading of its own, but a chat message
+// nested in some other future screen should never be able to plant a second
+// <h1> ahead of the page's real one.
+const MARKDOWN_COMPONENTS: Components = {
+  p: ({ node: _node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,
+  ul: ({ node: _node, ...props }) => <ul className="mb-3 list-disc space-y-1 pl-5 last:mb-0" {...props} />,
+  // pl-8, not ul's pl-5: an outside decimal marker needs room for its own
+  // digits before the gap to the text, and a recipe walkthrough routinely
+  // runs past 9 steps. Measured "17." at ~14.8px against 13px Inter — pl-5's
+  // 14px left it clipping its own leading digit against the scroll
+  // container's edge (overflow-y-auto computes overflow-x to auto too, which
+  // clips at 0 rather than letting the marker bleed left). pl-8 leaves margin
+  // to spare, and a bulleted list's single-glyph marker doesn't need it.
+  ol: ({ node: _node, ...props }) => <ol className="mb-3 list-decimal space-y-1 pl-8 last:mb-0" {...props} />,
+  li: ({ node: _node, ...props }) => <li className="pl-1" {...props} />,
+  strong: ({ node: _node, ...props }) => <strong className="font-semibold text-text" {...props} />,
+  h1: ({ node: _node, ...props }) => (
+    <p className="mt-4 mb-2 font-heading text-[14px] font-semibold text-text first:mt-0" {...props} />
+  ),
+  h2: ({ node: _node, ...props }) => (
+    <p className="mt-4 mb-2 font-heading text-[14px] font-semibold text-text first:mt-0" {...props} />
+  ),
+  h3: ({ node: _node, ...props }) => (
+    <p className="mt-3 mb-2 font-heading text-[13px] font-semibold text-text first:mt-0" {...props} />
+  ),
+  code: ({ node: _node, ...props }) => (
+    <code className="rounded-sm bg-neutral-900 px-1 py-0.5 font-mono text-[12px] text-text" {...props} />
+  ),
+  pre: ({ node: _node, ...props }) => (
+    <pre className="mb-3 overflow-x-auto rounded-md bg-neutral-900 p-3 text-[12px] last:mb-0" {...props} />
+  ),
+  blockquote: ({ node: _node, ...props }) => (
+    <blockquote className="mb-3 border-l-2 border-neutral-700 pl-3 text-neutral-400 last:mb-0" {...props} />
+  ),
+};
+
+// Shared by both a finished turn and the buffer still streaming in — the same
+// text, rendered the same way, just at a different point in its life.
+function ChatMarkdown({ text }: { text: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkBreaks]} components={MARKDOWN_COMPONENTS}>
+      {text}
+    </ReactMarkdown>
+  );
+}
 
 interface ChatViewProps {
   recipe: ChatRecipe;
@@ -149,8 +208,8 @@ function ChatView({ recipe, kitchenProfile }: ChatViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       {/* Announced politely, so a screen reader hears each finished turn. The
-          streaming bubble below is deliberately excluded — announcing it would
-          re-read the reply on every delta as it types itself out. */}
+          text still streaming in below is deliberately excluded — announcing
+          it would re-read the reply on every delta as it types itself out. */}
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto pb-1" aria-live="polite">
         {messages.map((message, index) =>
           message.role === "user" ? (
@@ -159,15 +218,18 @@ function ChatView({ recipe, kitchenProfile }: ChatViewProps) {
             </div>
           ) : (
             <div key={index} className={ASSISTANT_TEXT}>
-              {message.text}
+              <ChatMarkdown text={message.text} />
             </div>
           ),
         )}
 
+        {/* No trailing caret glyph here — it has nowhere sensible to sit once
+            the text is a tree of parsed elements rather than one string, and
+            the growing, self-reformatting text is already the same liveness
+            cue Claude's own chat relies on. */}
         {streamingText && (
           <div className={ASSISTANT_TEXT} aria-hidden="true">
-            {streamingText}
-            <span className="ml-0.5 inline-block animate-pulse text-neutral-500">▍</span>
+            <ChatMarkdown text={streamingText} />
           </div>
         )}
 
