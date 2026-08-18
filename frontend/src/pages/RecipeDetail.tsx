@@ -118,6 +118,7 @@ function RecipeDetail() {
             instructions: meal.strInstructions,
           }}
           kitchenProfile={profile}
+          mealId={meal.idMeal}
         />
       </div>
     );

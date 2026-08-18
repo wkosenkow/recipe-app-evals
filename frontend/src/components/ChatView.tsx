@@ -3,6 +3,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
 import { ChatStreamError, MAX_TURN_LENGTH, streamChatMessage, type ChatMessage, type ChatRecipe } from "../lib/chat";
+import { getCookingSession, saveCookingSession } from "../lib/cooking-session";
 import type { KitchenProfile } from "../types/kitchen";
 
 const QUICK_PICKS = ["No dairy", "Fewer servings", "Different spices", "More detail, please"];
@@ -90,9 +91,10 @@ function ChatMarkdown({ text }: { text: string }) {
 interface ChatViewProps {
   recipe: ChatRecipe;
   kitchenProfile: KitchenProfile;
+  mealId: string;
 }
 
-function ChatView({ recipe, kitchenProfile }: ChatViewProps) {
+function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -164,13 +166,48 @@ function ChatView({ recipe, kitchenProfile }: ChatViewProps) {
     void runStream({}, () => {});
   };
 
+  // Resume a saved conversation instead of firing the opening walkthrough
+  // again — `cancelled` guards against React StrictMode's dev-only double
+  // mount firing this twice (the second run's cleanup sets it before the
+  // first run's request can resolve), the same pattern RecipeDetail already
+  // uses for its own fetch-on-mount.
   useEffect(() => {
-    requestOpening();
+    let cancelled = false;
+
+    getCookingSession(mealId)
+      .then((saved) => {
+        if (cancelled) return;
+        if (saved.length > 0) {
+          setMessages(saved);
+        } else {
+          requestOpening();
+        }
+      })
+      .catch(() => {
+        // A session that failed to load is not a chat failure — fall back to
+        // the normal opening walkthrough rather than surfacing an error for a
+        // feature the cook doesn't know exists yet.
+        if (!cancelled) requestOpening();
+      });
+
     // Stop generating when the cook closes the recipe: an unread reply is
     // billed all the same.
-    return () => abortRef.current?.abort();
+    return () => {
+      cancelled = true;
+      abortRef.current?.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Best-effort persistence after every turn — including a rolled-back one,
+  // which still accurately reflects what the cook would see if they came
+  // back. A failed save has no visible effect on the chat itself, so it's
+  // not surfaced as an error; skipped entirely before the first reply lands,
+  // since an empty array here just means "still loading", not "clear it".
+  useEffect(() => {
+    if (messages.length === 0) return;
+    void saveCookingSession(mealId, messages).catch(() => {});
+  }, [messages, mealId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
