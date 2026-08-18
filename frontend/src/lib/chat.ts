@@ -1,5 +1,4 @@
 import { API_URL, ApiError } from "./api";
-import type { RecipeEnrichment } from "./recipe-enrichment";
 import type { KitchenProfile } from "../types/kitchen";
 import type { MealIngredient } from "../types/mealdb";
 
@@ -17,7 +16,6 @@ export interface ChatMessage {
 
 interface SendChatMessageParams {
   recipe: ChatRecipe;
-  enrichment?: RecipeEnrichment;
   kitchenProfile: KitchenProfile;
   message?: string;
   history?: ChatMessage[];
@@ -62,7 +60,7 @@ type ChatStreamFrame = { type: "delta"; text: string } | { type: "done" } | { ty
  * otherwise indistinguishable from a finished reply.
  */
 export const streamChatMessage = async (
-  { recipe, enrichment, kitchenProfile, message, history }: SendChatMessageParams,
+  { recipe, kitchenProfile, message, history }: SendChatMessageParams,
   { onDelta, signal }: StreamOptions,
 ): Promise<string> => {
   const response = await fetch(`${API_URL}/api/chat`, {
@@ -72,7 +70,6 @@ export const streamChatMessage = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       recipe,
-      enrichment,
       kitchenProfile,
       message,
       history: history?.slice(-HISTORY_WINDOW),
