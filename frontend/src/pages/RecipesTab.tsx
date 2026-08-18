@@ -7,6 +7,7 @@ import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
+import { RecipeListSkeleton } from "../components/Skeletons";
 import { toIngredientList, toTagList, type MealDBMeal, type MealDBSummary } from "../types/mealdb";
 
 // Search returns whole meals; the cuisine filter returns summaries carrying
@@ -157,7 +158,12 @@ function RecipesTab() {
           </div>
         )}
 
-        {loading && <div className="text-sm text-neutral-500">Loading…</div>}
+        {/* Skeletons only when there's nothing on screen yet. Refining a
+            search already has results showing, and replacing them with grey
+            boxes on every debounced keystroke would flash the whole list —
+            keeping the previous results visible while the next set loads is
+            both calmer and more useful. */}
+        {loading && meals.length === 0 && <RecipeListSkeleton />}
         {error && <div className="text-sm text-danger">{error}</div>}
 
         {!loading && !error && showPrompt && (

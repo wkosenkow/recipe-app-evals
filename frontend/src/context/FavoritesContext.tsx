@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useAuth } from "./AuthContext";
+import { useToast } from "./ToastContext";
 import { apiDelete, apiGet, apiPost } from "../lib/api";
 import { lookupMealById } from "../lib/mealdb";
 import { toIngredientList, type MealDBMeal } from "../types/mealdb";
@@ -18,6 +19,7 @@ const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         if (favorites.some((favorite) => favorite.mealId === mealId)) {
           await apiDelete(`/api/favorites/${mealId}`);
           setFavorites((prev) => prev.filter((favorite) => favorite.mealId !== mealId));
+          // Raised after the request settles, not before it: a confirmation
+          // that appears whether or not the server agreed isn't a
+          // confirmation. A failure throws past this and leaves no toast.
+          showToast("Removed from favorites");
           return;
         }
 
@@ -63,9 +69,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         });
 
         setFavorites((prev) => [data.favorite, ...prev]);
+        showToast("Saved to favorites");
       },
     }),
-    [favorites, loading, error],
+    [favorites, loading, error, showToast],
   );
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;

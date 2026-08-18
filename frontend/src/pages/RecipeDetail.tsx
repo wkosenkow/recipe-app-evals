@@ -7,6 +7,7 @@ import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { lookupMealById } from "../lib/mealdb";
 import ChatView from "../components/ChatView";
 import Footer from "../components/Footer";
+import { RecipeDetailSkeleton } from "../components/Skeletons";
 import { toIngredientList, toTagList, type MealDBMeal } from "../types/mealdb";
 
 type ViewMode = "card" | "recipe" | "cooking";
@@ -56,7 +57,7 @@ function RecipeDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-neutral-500">Loading…</div>;
+    return <RecipeDetailSkeleton />;
   }
 
   if (error || !meal) {
