@@ -6,14 +6,10 @@ function Footer() {
   const { user, logout } = useAuth();
 
   return (
-    // This is the bottom-most element on every screen, so it's what the home
-    // indicator overlaps on a notched phone — the OS claims that strip for its
-    // own swipe, which would otherwise sit right on top of Log out. `max()`
-    // keeps the normal padding on devices that report no inset.
-    <footer
-      className="flex items-center justify-center gap-4 border-t border-neutral-800 px-4 pt-4 text-xs"
-      style={{ paddingBottom: "max(var(--spacing) * 4, env(safe-area-inset-bottom))" }}
-    >
+    // The safe-area inset only applies from 640px up. Below that BottomNav is
+    // the bottom-most element and carries the inset itself — keeping it here
+    // too would leave a band of dead space above the bar on a notched phone.
+    <footer className="flex items-center justify-center gap-4 border-t border-neutral-800 px-4 pt-4 pb-4 text-xs sm:[padding-bottom:max(calc(var(--spacing)*4),env(safe-area-inset-bottom))]">
       {user ? (
         <>
           <span className="min-w-0 truncate text-neutral-500">{user.email}</span>

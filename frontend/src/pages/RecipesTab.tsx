@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { usePendingFavorite } from "../lib/use-pending-favorite";
 import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 import RecipeCard from "../components/RecipeCard";
 import { RecipeListSkeleton } from "../components/Skeletons";
 import { toIngredientList, toTagList, type MealDBMeal, type MealDBSummary } from "../types/mealdb";
@@ -18,12 +20,17 @@ type RecipeListItem = MealDBSummary & Partial<MealDBMeal>;
 
 function RecipesTab() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  // Completes a save the cook started before signing in.
+  usePendingFavorite();
 
   const handleToggleFavorite = (mealId: string) => {
     if (!user) {
-      navigate("/login");
+      // On a phone, losing this meant retyping the search to find the recipe
+      // again — so the list and the meal both travel to the login screen.
+      navigate("/login", { state: { from: `${location.pathname}${location.search}`, pendingFavorite: mealId } });
       return;
     }
     toggleFavorite(mealId);
@@ -229,6 +236,7 @@ function RecipesTab() {
       </div>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 }

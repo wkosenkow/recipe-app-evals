@@ -1,4 +1,4 @@
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
@@ -8,6 +8,7 @@ import { useRecipe } from "./recipe-shared";
 
 function RecipeCookView() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user, loading } = useAuth();
   const { profile } = useKitchenProfile();
   const { meal, ingredients } = useRecipe();
@@ -26,7 +27,7 @@ function RecipeCookView() {
   // itself. `replace` keeps the chat out of history — going back from the
   // login screen should return to the recipe, not bounce through here again.
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   return (

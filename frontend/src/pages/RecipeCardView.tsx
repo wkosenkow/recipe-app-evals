@@ -1,18 +1,23 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useResolvedBack } from "../lib/use-resolved-back";
+import { usePendingFavorite } from "../lib/use-pending-favorite";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 import { toTagList } from "../types/mealdb";
 import { useRecipe, KICKER } from "./recipe-shared";
 
 function RecipeCardView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { meal, ingredients } = useRecipe();
+  // Completes a save the cook started before signing in.
+  usePendingFavorite();
   // A recipe link is what people share, so this screen is routinely the first
   // one a session sees — hence the list rather than the browser's history.
   const goBack = useResolvedBack("/");
@@ -22,7 +27,9 @@ function RecipeCardView() {
 
   const handleToggleFavorite = () => {
     if (!user) {
-      navigate("/login");
+      // Carry both the screen and the half-finished save, so signing in
+      // returns here with the recipe already starred.
+      navigate("/login", { state: { from: location.pathname, pendingFavorite: meal.idMeal } });
       return;
     }
     toggleFavorite(meal.idMeal, meal);
@@ -107,29 +114,38 @@ function RecipeCardView() {
           </ul>
         </div>
 
-        {/* Links, not buttons: these are now addressable screens, so they
-            should behave like every other link in the app — openable in a new
-            tab, and reachable by the back gesture afterwards.
+        {/* Sticky, because `mt-auto` alone only held these on screen while the
+            recipe was short: a long ingredient list pushed the screen's whole
+            purpose below the fold, and once the bottom bar existed they
+            scrolled underneath it. The offset lifts the row clear of that bar
+            on phones and drops to the viewport edge above 640px, where there
+            is no bar. `-mx-6 px-6` lets the divider reach the screen edges
+            through the container's own padding.
 
-            `mt-auto` keeps the pair on the bottom edge when the recipe is short
-            enough to leave room, as the mockup has it. `py-4` stays even though
-            `.btn` now has a 44px floor: that floor only applies to coarse
-            pointers, and without the padding these fall back to about 28px on
-            desktop — too small for the screen's primary action either way. */}
-        <div className="mt-auto flex gap-3 pt-3">
+            Links, not buttons: these are addressable screens now, so they
+            should open in a new tab like every other link. `py-4` stays even
+            though `.btn` has a 44px floor — that floor is coarse-pointer only,
+            and without the padding these fall back to about 28px on desktop. */}
+        <div className="sticky bottom-[calc(56px+env(safe-area-inset-bottom))] z-[5] -mx-6 mt-auto flex gap-3 border-t border-neutral-800 bg-bg px-6 py-3 sm:bottom-0">
           <Link to="recipe" className="btn btn-secondary flex-1 py-4">
             Recipe
           </Link>
           {/* Guests get sent to the login screen rather than to a chat that
               would 401 — the cook route enforces the same rule on arrival, so
-              this is the friendly path to it, not the only one. */}
-          <Link to={user ? "cook" : "/login"} className="btn btn-primary flex-1 py-4">
+              this is the friendly path to it, not the only one. Either way
+              they come back to the chat they were reaching for. */}
+          <Link
+            to={user ? "cook" : "/login"}
+            state={user ? undefined : { from: `${location.pathname}/cook` }}
+            className="btn btn-primary flex-1 py-4"
+          >
             Cook with AI
           </Link>
         </div>
       </div>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 }
