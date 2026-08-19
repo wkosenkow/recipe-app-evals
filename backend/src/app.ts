@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import mongoose from "mongoose";
 import morgan from "morgan";
 
 import { env } from "./config/env.js";
@@ -43,10 +44,27 @@ app.use(
 app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(morgan("dev"));
+// "dev" is a colourised one-liner meant for a terminal someone is watching;
+// it drops the client address, the referrer and the user agent, which are the
+// fields you actually want when reading logs after the fact. "combined" is the
+// Apache-style format log tooling expects.
+app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
+// Answering "ok" while the database is unreachable makes this endpoint worse
+// than useless: every route that matters needs Mongo, so a health check that
+// ignores it reports a healthy service that cannot serve a single request.
+// `readyState` is mongoose's own connection state — 1 is connected.
+//
+// 503 rather than 200-with-a-flag so an uptime monitor sees the outage without
+// having to parse the body. Nothing currently depends on the status code:
+// render.yaml sets no `healthCheckPath`, so this cannot bounce the service.
 app.get("/api/health", (_request, response) => {
-  response.status(200).json({ status: "ok" });
+  const databaseUp = mongoose.connection.readyState === 1;
+
+  response.status(databaseUp ? 200 : 503).json({
+    status: databaseUp ? "ok" : "degraded",
+    database: databaseUp ? "up" : "down",
+  });
 });
 
 app.use("/api/auth", authRouter);
