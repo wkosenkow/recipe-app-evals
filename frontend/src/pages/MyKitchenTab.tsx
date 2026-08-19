@@ -50,11 +50,21 @@ function MyKitchenTab() {
 
         <div className="field">
           <label htmlFor="kitchen-equipment">Equipment</label>
+          {/* Both of these are comma-separated lists, not sentences, so the
+              phone's habit of capitalising after each one is wrong here.
+              Autocorrect stays on: unlike dish names, "blender" and
+              "dairy-free" are words it knows, and it saves typing. Saving is
+              per-keystroke, so Enter only needs to put the keyboard away. */}
           <input
             id="kitchen-equipment"
             className="input"
+            enterKeyHint="done"
+            autoCapitalize="none"
             value={profile.equipment}
             onChange={(e) => updateProfile({ equipment: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
             placeholder="e.g. oven, blender, no stand mixer"
           />
         </div>
@@ -64,8 +74,13 @@ function MyKitchenTab() {
           <input
             id="kitchen-diet"
             className="input"
+            enterKeyHint="done"
+            autoCapitalize="none"
             value={profile.diet}
             onChange={(e) => updateProfile({ diet: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
             placeholder="e.g. dairy-free, tree nut allergy"
           />
         </div>
