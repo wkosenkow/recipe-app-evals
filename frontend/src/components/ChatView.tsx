@@ -59,7 +59,18 @@ const MARKDOWN_COMPONENTS: Components = {
   // pl-8 is 22.4px with a mouse and 32px under touch, against roughly 18px
   // for "17." at the 16px body size — margin to spare in both. A bulleted
   // list's single-glyph marker doesn't need it.
-  ol: ({ node: _node, ...props }) => <ol className="mb-3 list-decimal space-y-1 pl-8 last:mb-0" {...props} />,
+  //
+  // Each step also gets a card of its own: a walkthrough is a sequence a cook
+  // works through with their eyes leaving the screen between steps, and as one
+  // continuous column the current step was indistinguishable from the previous
+  // six at a glance. Surface fill and a gap give each one an edge to find
+  // again; the marker takes the accent so the number is what the eye lands on.
+  ol: ({ node: _node, ...props }) => (
+    <ol
+      className="mb-3 flex list-decimal flex-col gap-2 pl-8 last:mb-0 [&>li]:rounded-md [&>li]:bg-surface [&>li]:px-4 [&>li]:py-3 [&>li]:marker:font-semibold [&>li]:marker:text-accent"
+      {...props}
+    />
+  ),
   li: ({ node: _node, ...props }) => <li className="pl-1" {...props} />,
   strong: ({ node: _node, ...props }) => <strong className="font-semibold text-text" {...props} />,
   // Sized against the 16px body below, not the old 13px — at the previous
@@ -106,9 +117,17 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // Whether the reader is sitting at the bottom of the transcript. Auto-scroll
+  // is allowed only while this holds, so scrolling up to re-read an earlier
+  // step is not undone by the next token.
+  const [pinned, setPinned] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Distinguishes an abort the cook asked for from one caused by unmounting or
+  // by a newer request superseding this one — the three want different
+  // outcomes and `signal.aborted` alone can't tell them apart.
+  const stoppedRef = useRef(false);
 
   const runStream = async (
     turn: { message?: string; history?: ChatMessage[] },
@@ -122,6 +141,13 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
     setError(null);
     setStreamingText("");
 
+    // Mirrors what `streamingText` accumulates. An abort rejects out of
+    // `streamChatMessage` as a DOMException rather than a ChatStreamError, so
+    // its `partial` is unavailable — but a deliberate Stop still needs to keep
+    // what arrived, and reading it back out of state inside the catch would
+    // mean a stale closure or a setState-with-side-effects.
+    let received = "";
+
     try {
       const reply = await streamChatMessage(
         { recipe, kitchenProfile, ...turn },
@@ -131,6 +157,7 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
           // splice the abandoned reply into the new one.
           onDelta: (text) => {
             if (controller.signal.aborted) return;
+            received += text;
             setStreamingText((prev) => prev + text);
           },
           signal: controller.signal,
@@ -143,10 +170,26 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
 
       setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
     } catch (err) {
-      // We tore this down ourselves — either the view is going away or a newer
-      // request replaced it. Touching state here would resurrect a reply the
-      // user has already moved on from.
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        // A deliberate Stop, not a teardown. What arrived is genuinely what
+        // the model said — a cook who stopped at "sear both sides" already
+        // has something to act on — so it's kept as a normal turn. No error
+        // is shown: the cook caused this and knows it.
+        if (stoppedRef.current) {
+          stoppedRef.current = false;
+          const partial = received.trim();
+          // Nothing arrived: leave their question in the transcript rather
+          // than rolling it back into the input, which after a deliberate
+          // Stop would read as the app losing the message.
+          if (partial) setMessages((prev) => [...prev, { role: "assistant", text: partial }]);
+          setStreamingText("");
+          setLoading(false);
+        }
+        // Otherwise the view is going away or a newer request replaced this
+        // one. Touching state would resurrect a reply the user has moved on
+        // from.
+        return;
+      }
 
       const partial = err instanceof ChatStreamError ? err.partial.trim() : "";
 
@@ -215,9 +258,34 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
     void saveCookingSession(mealId, messages).catch(() => {});
   }, [messages, mealId]);
 
+  // Within this many pixels of the bottom still counts as "reading the latest"
+  // — sub-pixel rounding and the odd trailing margin mean an exact comparison
+  // would drop out of pinned state on its own.
+  const PIN_THRESHOLD = 48;
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setPinned(el.scrollHeight - el.scrollTop - el.clientHeight < PIN_THRESHOLD);
+  };
+
+  const jumpToLatest = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    setPinned(true);
+  };
+
+  // The container is scrolled directly rather than through
+  // `bottomRef.scrollIntoView`: that walks up the ancestor chain and can move
+  // the page as well as this pane, and its smooth animations queue up and
+  // fight each other when a delta lands every few milliseconds.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingText, loading, error]);
+    if (!pinned) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, streamingText, loading, error, pinned]);
 
   // Grows the box with the message. Reset to "auto" first so a deleted line
   // shrinks the box back down — scrollHeight only ever reports how tall the
@@ -228,6 +296,11 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
   }, [input]);
+
+  const stop = () => {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
+  };
 
   const send = (text: string) => {
     const trimmed = text.trim();
@@ -250,10 +323,16 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="relative flex min-h-0 flex-1 flex-col">
       {/* Announced politely, so a screen reader hears each finished turn. The
           text still streaming in below is deliberately excluded — announcing
           it would re-read the reply on every delta as it types itself out. */}
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto pb-1" aria-live="polite">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex flex-1 flex-col gap-4 overflow-y-auto pb-1"
+        aria-live="polite"
+      >
         {messages.map((message, index) =>
           message.role === "user" ? (
             <div key={index} className="flex justify-end">
@@ -298,7 +377,20 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
             )}
           </div>
         )}
-        <div ref={bottomRef} />
+      </div>
+
+        {/* Only while the reader has scrolled away. It replaces the yank back
+            down that used to happen on its own, so catching up stays the
+            reader's decision. */}
+        {!pinned && (
+          <button
+            type="button"
+            onClick={jumpToLatest}
+            className="btn btn-secondary absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-surface px-4 shadow-md"
+          >
+            ↓ Jump to latest
+          </button>
+        )}
       </div>
 
       <div className="flex flex-shrink-0 flex-col gap-3 border-t border-neutral-800 pt-4">
@@ -331,17 +423,25 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
             }}
             placeholder="e.g. no dairy, more servings…"
           />
-          {/* shrink-0: the textarea takes `flex-1`, and without this the button
-              is the flex item that gives way — it collapses to about 36px and
-              the label spills past its own border. */}
-          <button
-            type="button"
-            onClick={() => send(input)}
-            disabled={loading}
-            className="btn btn-primary shrink-0"
-          >
-            Send
-          </button>
+          {/* Becomes Stop while a reply is streaming, rather than sitting there
+              disabled. A walkthrough runs to 350 words and the cook often has
+              what they need by step three — waiting out the rest, unable to
+              ask the next thing, was the only option before. The abort
+              machinery already existed for unmount; this just gives it a
+              button.
+
+              shrink-0: the textarea takes `flex-1`, and without this the
+              button is the flex item that gives way — it collapses to about
+              36px and the label spills past its own border. */}
+          {loading ? (
+            <button type="button" onClick={stop} className="btn btn-secondary shrink-0">
+              Stop
+            </button>
+          ) : (
+            <button type="button" onClick={() => send(input)} className="btn btn-primary shrink-0">
+              Send
+            </button>
+          )}
         </div>
       </div>
     </div>
