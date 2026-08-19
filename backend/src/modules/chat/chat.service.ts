@@ -45,7 +45,12 @@ async function* streamAnthropicReply(
 
   const stream = anthropic!.messages.stream({
     model: env.ANTHROPIC_MODEL,
-    max_tokens: 1024,
+    // A ceiling, not a target — only tokens actually generated are billed, so
+    // headroom is free. It needs to be here because a beginner's walkthrough
+    // is asked for 500-600 words, and 1024 tokens is roughly 750: a long
+    // recipe would have been cut off mid-step, which the client then correctly
+    // but unhelpfully reports as a broken reply.
+    max_tokens: 2048,
     system,
     messages: conversation,
   });

@@ -50,10 +50,21 @@ const describeRecipe = ({ recipe, enrichment }: ChatRequestBody): string => {
 const buildSystemPrompt = (body: ChatRequestBody): string => {
   const { skill, units } = body.kitchenProfile;
 
+  // The length budget travels with the skill level rather than sitting on its
+  // own at the end of the prompt. It used to be a flat "well under 350 words"
+  // in the final sentence, which quietly cancelled the instruction above it:
+  // a twelve-step recipe spends 250-300 words just naming the steps and their
+  // quantities, and the opening turn is also asked for the full ingredient
+  // list with substitutions. There was no room left for the "why", so the
+  // model dropped it — the softest of the three requirements, and the one
+  // furthest from the end of the prompt.
   const skillInstruction =
     skill === "novice"
-      ? "The cook is a beginner — explain the reason (\"why\") behind each non-obvious step, not just the action."
-      : "The cook is experienced — keep steps terse, skip explaining basic technique.";
+      ? "The cook is a beginner — explain the reason (\"why\") behind each non-obvious step, not just the " +
+        "action. Those explanations are the point for this cook, so give them room: aim for 500-600 words " +
+        "and never drop the reasoning to save space."
+      : "The cook is experienced — keep steps terse, skip explaining basic technique. Keep replies well " +
+        "under 300 words.";
 
   const unitsInstruction =
     units === "imperial"
@@ -73,8 +84,7 @@ const buildSystemPrompt = (body: ChatRequestBody): string => {
     "requested servings is approximate — say so rather than presenting the scaled amounts as exact. " +
     "Actively cross-check the recipe's required equipment and ingredients against the cook's equipment and " +
     "dietary restrictions above, and proactively flag anything that doesn't line up — a missing tool, a " +
-    "conflicting ingredient — rather than waiting to be asked.\n" +
-    "Keep replies well under 350 words."
+    "conflicting ingredient — rather than waiting to be asked."
   );
 };
 
