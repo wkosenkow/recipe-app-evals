@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
@@ -16,6 +16,10 @@ import { toIngredientList, toTagList, type MealDBMeal, type MealDBSummary } from
 // and lets each card show whatever its own source happened to provide rather
 // than pretending the two endpoints are interchangeable.
 type RecipeListItem = MealDBSummary & Partial<MealDBMeal>;
+
+// The "no cuisine chosen" state. It is deliberately never written to the URL —
+// `/` and `/?cuisine=All` would otherwise be two addresses for one screen.
+const ALL_CUISINES = "All";
 
 function RecipesTab() {
   const navigate = useNavigate();
@@ -36,9 +40,37 @@ function RecipesTab() {
   };
 
   const [areas, setAreas] = useState<string[]>([]);
-  const [cuisine, setCuisine] = useState("All");
+
+  // The search and the chosen cuisine live in the URL, not in component state.
+  // They used to vanish the moment you opened a recipe: coming back gave an
+  // empty box and no results, so finding the dish you had just been looking at
+  // meant retyping — on a phone, the most expensive thing the app can ask for.
+  // As URL state they survive the round trip, a reload, and the back gesture,
+  // and a list of results becomes a link worth sending someone.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("q") ?? "";
+  const cuisine = searchParams.get("cuisine") ?? ALL_CUISINES;
+
+  // `replace`, always: this fires on every keystroke, and pushing would bury
+  // the previous screen under one history entry per character typed.
+  const setParam = (key: string, value: string, absent: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value === absent) next.delete(key);
+        else next.set(key, value);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const setQuery = (value: string) => setParam("q", value, "");
+  const setCuisine = (value: string) => setParam("cuisine", value, ALL_CUISINES);
+
+  // Which cuisines the picker is showing is a transient aid, not part of what
+  // the screen is displaying — so it stays local and out of the URL.
   const [cuisineQuery, setCuisineQuery] = useState("");
-  const [query, setQuery] = useState("");
   const [meals, setMeals] = useState<RecipeListItem[]>([]);
   // How many the cuisine returned before the name filter narrowed it. Without
   // this an empty result cannot tell the difference between "this cuisine has
@@ -54,7 +86,7 @@ function RecipesTab() {
   useEffect(() => {
     let cancelled = false;
 
-    if (cuisine === "All" && query.trim() === "") {
+    if (cuisine === ALL_CUISINES && query.trim() === "") {
       setMeals([]);
       setError(null);
       setLoading(false);
@@ -65,15 +97,15 @@ function RecipesTab() {
       setLoading(true);
       setError(null);
 
-      const fetchMeals = cuisine !== "All" ? filterMealsByArea(cuisine) : searchMealsByName(query.trim());
+      const fetchMeals = cuisine !== ALL_CUISINES ? filterMealsByArea(cuisine) : searchMealsByName(query.trim());
 
       fetchMeals
         .then((results) => {
           if (cancelled) return;
           const q = query.trim().toLowerCase();
-          setCuisineTotal(cuisine !== "All" ? results.length : 0);
+          setCuisineTotal(cuisine !== ALL_CUISINES ? results.length : 0);
           const filtered =
-            cuisine !== "All" && q !== "" ? results.filter((meal) => meal.strMeal.toLowerCase().includes(q)) : results;
+            cuisine !== ALL_CUISINES && q !== "" ? results.filter((meal) => meal.strMeal.toLowerCase().includes(q)) : results;
           setMeals(filtered);
         })
         .catch((err: unknown) => {
@@ -91,23 +123,23 @@ function RecipesTab() {
   }, [cuisine, query]);
 
   const trimmedQuery = query.trim();
-  const showPrompt = cuisine === "All" && trimmedQuery === "";
+  const showPrompt = cuisine === ALL_CUISINES && trimmedQuery === "";
 
   // The search box matches meal names, so a cuisine typed into it finds
   // nothing — "Indian" is a cuisine, not a dish. Offer the cuisine instead of
   // letting the dead end stand.
   const suggestedArea =
-    cuisine === "All" && trimmedQuery !== ""
+    cuisine === ALL_CUISINES && trimmedQuery !== ""
       ? areas.find((area) => area.toLowerCase() === trimmedQuery.toLowerCase())
       : undefined;
 
   // The cuisine returned recipes and the name filter removed every one of
   // them. Saying "no recipes match" here hides the cause: the cook picked a
   // cuisine and still sees nothing, because of text left in the other box.
-  const narrowedToNothing = cuisine !== "All" && trimmedQuery !== "" && cuisineTotal > 0;
+  const narrowedToNothing = cuisine !== ALL_CUISINES && trimmedQuery !== "" && cuisineTotal > 0;
 
   const matchingAreas =
-    cuisine === "All" && cuisineQuery.trim() !== ""
+    cuisine === ALL_CUISINES && cuisineQuery.trim() !== ""
       ? areas.filter((area) => area.toLowerCase().includes(cuisineQuery.trim().toLowerCase()))
       : [];
 
@@ -122,7 +154,7 @@ function RecipesTab() {
           placeholder="Search recipes…"
         />
 
-        {cuisine === "All" ? (
+        {cuisine === ALL_CUISINES ? (
           <div className="flex flex-col gap-3">
             <input
               className="input"
@@ -154,7 +186,7 @@ function RecipesTab() {
                 than the outline the suggestions above use. */}
             <button
               type="button"
-              onClick={() => setCuisine("All")}
+              onClick={() => setCuisine(ALL_CUISINES)}
               className="tag tag-accent cursor-pointer gap-1 hover:bg-accent-700"
             >
               {cuisine}
@@ -221,7 +253,7 @@ function RecipesTab() {
               thumbnail={meal.strMealThumb}
               // Both endpoints carry strArea today; the selected cuisine is
               // only a fallback for a row that somehow arrives without one.
-              cuisine={meal.strArea ?? (cuisine !== "All" ? cuisine : undefined)}
+              cuisine={meal.strArea ?? (cuisine !== ALL_CUISINES ? cuisine : undefined)}
               category={meal.strCategory}
               tags={toTagList(meal)}
               ingredientCount={toIngredientList(meal).length}
