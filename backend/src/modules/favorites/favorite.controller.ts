@@ -3,8 +3,17 @@ import type { Request, Response } from "express";
 import { saveFavoriteBodySchema } from "./favorite.schemas.js";
 import { Favorite } from "./favorite.model.js";
 
+// Favorites carry a full recipe snapshot each — ingredients and instructions
+// included — so an unbounded find is a response that grows without limit on a
+// phone connection. This is a ceiling, not pagination: nobody saving recipes by
+// hand reaches it, and adding paging to a screen that has never needed it would
+// be machinery with no user.
+const MAX_FAVORITES = 100;
+
 export const listFavorites = async (request: Request, response: Response): Promise<void> => {
-  const favorites = await Favorite.find({ userId: request.userId }).sort({ createdAt: -1 });
+  const favorites = await Favorite.find({ userId: request.userId })
+    .sort({ createdAt: -1 })
+    .limit(MAX_FAVORITES);
 
   response.status(200).json({ favorites });
 };

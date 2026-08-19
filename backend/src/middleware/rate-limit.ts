@@ -1,4 +1,7 @@
-import rateLimit, { type Options } from "express-rate-limit";
+// ipKeyGenerator is the library's own IPv6-aware helper: a raw `request.ip`
+// would give every address inside a client's /64 its own bucket, which is not
+// a limit at all.
+import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 
 const MINUTE = 60 * 1000;
 
@@ -12,9 +15,16 @@ const jsonMessage = (message: string): Partial<Options> => ({
 
 // Chat is the only endpoint that costs real money per request (Anthropic
 // tokens), so it gets the tightest budget of the three.
+//
+// Keyed by account, not address — see the note in chat.routes.ts. The router
+// mounts `authenticate` ahead of this, so `userId` is always set by the time
+// the key is read; the IP fallback exists only so a future remount in the
+// wrong order degrades to the old behaviour instead of collapsing every
+// caller into one shared bucket under the key `undefined`.
 export const chatLimiter = rateLimit({
   windowMs: 15 * MINUTE,
   limit: 30,
+  keyGenerator: (request) => request.userId ?? ipKeyGenerator(request.ip ?? ""),
   ...jsonMessage("Too many chat requests. Please wait a few minutes and try again."),
 });
 
