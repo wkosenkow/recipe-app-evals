@@ -3,13 +3,13 @@ import { NavLink } from "react-router-dom";
 import { NAV_TABS } from "./nav-tabs";
 
 /**
- * The phone's navigation. Below 640px the header's tabs are hidden and this
- * takes over.
+ * The app's navigation, at every width.
  *
- * The header put them as ~18px targets in the top-right corner — the hardest
- * part of a 390px screen to reach with the thumb that's holding the phone.
- * Right-aligned chrome reads well on a desktop; on a phone it's the wrong end
- * of the device.
+ * It used to trade places with a set of header tabs at 640px, so the controls
+ * jumped from the bottom of the screen to the top as a window widened. One
+ * placement everywhere is calmer, and this is the placement worth keeping: the
+ * header put these as ~18px targets in the top-right corner — the hardest part
+ * of a phone screen to reach with the thumb that's holding it.
  *
  * Sizes are explicit rather than taken from the spacing scale: 56px tall with
  * 48px targets is a platform convention, not something that should shift with
@@ -23,14 +23,10 @@ import { NAV_TABS } from "./nav-tabs";
 function BottomNav() {
   return (
     <>
-      <div
-        aria-hidden="true"
-        className="sm:hidden"
-        style={{ height: "calc(56px + env(safe-area-inset-bottom))" }}
-      />
+      <div aria-hidden="true" style={{ height: "calc(56px + env(safe-area-inset-bottom))" }} />
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-10 flex border-t border-neutral-800 bg-bg sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-10 flex border-t border-neutral-800 bg-bg"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {NAV_TABS.map(({ to, label, Icon }) => (

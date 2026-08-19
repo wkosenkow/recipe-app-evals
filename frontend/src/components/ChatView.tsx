@@ -6,8 +6,6 @@ import { ChatStreamError, MAX_TURN_LENGTH, streamChatMessage, type ChatMessage, 
 import { getCookingSession, saveCookingSession } from "../lib/cooking-session";
 import type { KitchenProfile } from "../types/kitchen";
 
-const QUICK_PICKS = ["No dairy", "Fewer servings", "Different spices", "More detail, please"];
-
 // The compose box grows with the message instead of scrolling internally, up
 // to this many pixels (about 6 lines at this text size) — past that a paste
 // or a long aside scrolls within the box rather than pushing the message list
@@ -394,13 +392,6 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
       </div>
 
       <div className="flex flex-shrink-0 flex-col gap-3 border-t border-neutral-800 pt-4">
-        <div className="flex flex-wrap gap-2">
-          {QUICK_PICKS.map((pick) => (
-            <button key={pick} type="button" onClick={() => send(pick)} disabled={loading} className="tag tag-outline">
-              {pick}
-            </button>
-          ))}
-        </div>
         {/* items-end: as the textarea grows past one line, Send should stay
             pinned to its bottom edge — the default stretch would pull it tall
             and thin along with the box instead. */}

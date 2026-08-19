@@ -35,12 +35,22 @@ function RecipeCardView() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // `h-dvh`, not `min-h-dvh`: the sticky action bar below only works if this
+    // screen's middle section is the thing that scrolls. Under `min-h-dvh` the
+    // page grows to fit its content, the body scrolls instead, and `sticky`
+    // stops helping — it holds an element at the edge once you reach it, it
+    // does not lift one into view. Adding the instructions here made the page
+    // long enough for that to show: the button sat at y=1049 on an 800px
+    // screen, out of sight until you scrolled to the very bottom.
+    <div className="flex h-dvh flex-col">
       {/* The shell was missing here entirely: opening a shared recipe cold gave
           a screen with no tabs at all, and no way to reach the rest of the
           app. */}
       <Header />
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+      {/* `min-h-0` lets this shrink below its content so `overflow-y-auto`
+          actually engages; without it a flex child refuses to go under its
+          content height and the overflow moves to the page. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
         <button
           type="button"
           onClick={goBack}
@@ -113,6 +123,15 @@ function RecipeCardView() {
           </ul>
         </div>
 
+        {/* The written method used to live on a screen of its own behind a
+            "Recipe" button. Splitting it from the ingredients cost a
+            navigation to answer "what do I do with all this?", and left the
+            two halves of one recipe on two URLs. */}
+        <div className="mt-3 flex flex-col gap-2">
+          <div className={KICKER}>INSTRUCTIONS</div>
+          <div className="whitespace-pre-wrap text-base leading-[1.7] text-neutral-200">{meal.strInstructions}</div>
+        </div>
+
         {/* Sticky, because `mt-auto` alone only held these on screen while the
             recipe was short: a long ingredient list pushed the screen's whole
             purpose below the fold, and once the bottom bar existed they
@@ -123,14 +142,11 @@ function RecipeCardView() {
             measured. `-mx-6 px-6` lets the divider reach the screen edges
             through the container's own padding.
 
-            Links, not buttons: these are addressable screens now, so they
-            should open in a new tab like every other link. `py-4` stays even
-            though `.btn` has a 44px floor — that floor is coarse-pointer only,
-            and without the padding these fall back to about 28px on desktop. */}
-        <div className="sticky bottom-0 z-[5] -mx-6 mt-auto flex gap-3 border-t border-neutral-800 bg-bg px-6 py-3">
-          <Link to="recipe" className="btn btn-secondary flex-1 py-4">
-            Recipe
-          </Link>
+            A link, not a button: this is an addressable screen, so it should
+            open in a new tab like every other link. `py-4` stays even though
+            `.btn` has a 44px floor — that floor is coarse-pointer only, and
+            without the padding it falls back to about 28px on desktop. */}
+        <div className="sticky bottom-0 z-[5] -mx-6 mt-auto flex border-t border-neutral-800 bg-bg px-6 py-3">
           {/* Guests get sent to the login screen rather than to a chat that
               would 401 — the cook route enforces the same rule on arrival, so
               this is the friendly path to it, not the only one. Either way
@@ -138,7 +154,7 @@ function RecipeCardView() {
           <Link
             to={user ? "cook" : "/login"}
             state={user ? undefined : { from: `${location.pathname}/cook` }}
-            className="btn btn-primary flex-1 py-4"
+            className="btn btn-primary w-full py-4"
           >
             Cook with AI
           </Link>
