@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { useAuth } from "./AuthContext";
 import { useToast } from "./ToastContext";
@@ -30,10 +30,58 @@ export function KitchenProfileProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestSave = useRef<Promise<boolean> | null>(null);
   const [profile, setProfile] = useState<KitchenProfile>(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // The newest profile that hasn't reached the server yet, and whether a PUT
+  // is currently in flight. Together they serialise the writes.
+  const queued = useRef<KitchenProfile | null>(null);
+  const inFlight = useRef(false);
+  const lastSaveOk = useRef(true);
+
+  /**
+   * Sends the queued profile, one request at a time.
+   *
+   * Firing a PUT per keystroke without this loses edits. Each one carries the
+   * whole profile and the server writes it wholesale, so ten concurrent
+   * requests for "dairy-free" are ten full documents racing each other — and
+   * the one that happens to arrive last wins, not the one sent last. Typing
+   * the word could leave "dairy-fr" stored, or "d". The screen still showed
+   * the right text, because the local state is optimistic; the truth only
+   * appeared on the next reload, which is exactly what makes it look like
+   * "it didn't save".
+   *
+   * Serialising rather than debouncing keeps the first keystroke's save
+   * immediate — nothing is sitting in a timer waiting to be lost if the tab
+   * closes — while guaranteeing the last value written is the last value
+   * typed.
+   */
+  const flushQueue = useCallback(() => {
+    if (inFlight.current) return;
+
+    const next = queued.current;
+    if (!next) return;
+
+    queued.current = null;
+    inFlight.current = true;
+
+    void apiPut<{ profile: KitchenProfile }>("/api/kitchen-profile", next)
+      .then(
+        () => {
+          lastSaveOk.current = true;
+        },
+        (err: unknown) => {
+          lastSaveOk.current = false;
+          setError(err instanceof Error ? err.message : "Failed to save kitchen profile");
+        },
+      )
+      .finally(() => {
+        inFlight.current = false;
+        // Keystrokes that landed while this request was out are still waiting.
+        if (queued.current) flushQueue();
+      });
+  }, []);
 
   // A pending confirmation belongs to a screen the cook is still on. Without
   // this, editing the profile and immediately navigating away pops a toast
@@ -68,39 +116,29 @@ export function KitchenProfileProvider({ children }: { children: ReactNode }) {
         const next = { ...profile, ...patch };
         setProfile(next);
 
-        // Resolves to whether the save worked, and never rejects — the timer
-        // below is the only consumer, and an unobserved rejection here would
-        // surface as an unhandled promise error whenever it's cleared.
-        const saved = apiPut<{ profile: KitchenProfile }>("/api/kitchen-profile", next).then(
-          () => true,
-          (err: unknown) => {
-            setError(err instanceof Error ? err.message : "Failed to save kitchen profile");
-            return false;
-          },
-        );
-        latestSave.current = saved;
+        // Queue rather than send: `flushQueue` guarantees one request at a
+        // time, so the last value typed is the last value written.
+        queued.current = next;
+        flushQueue();
 
-        // The save itself stays per-keystroke — deferring it would risk losing
-        // an edit if the cook navigates away mid-debounce — but the
-        // *confirmation* is collapsed, since equipment and diet are free text
-        // and would otherwise toast once per letter typed.
-        //
-        // The timer restarts on each *call*, not on each save's completion:
-        // the requests are concurrent and settle out of order, so a timer
-        // hung off an early response fires while the cook is still typing.
-        // That produced three overlapping toasts for one word in testing.
+        // The *confirmation* is collapsed even though the saves are not:
+        // equipment and diet are free text and would otherwise toast once per
+        // letter. The timer restarts on each call rather than on each save's
+        // completion — hanging it off a response fires it while the cook is
+        // still typing, which produced three overlapping toasts for one word.
         if (toastTimer.current) clearTimeout(toastTimer.current);
-        toastTimer.current = setTimeout(() => {
-          // Confirm against the most recent save rather than the one that
-          // happened to start this timer, and stay silent if it failed —
-          // the error banner already covers that case.
-          void latestSave.current?.then((ok) => {
-            if (ok) showToast("Kitchen profile saved");
-          });
+        toastTimer.current = setTimeout(function confirmWhenIdle() {
+          // Wait for the queue to drain before claiming anything is saved,
+          // and stay silent on failure — the error banner covers that.
+          if (inFlight.current || queued.current) {
+            toastTimer.current = setTimeout(confirmWhenIdle, 150);
+            return;
+          }
+          if (lastSaveOk.current) showToast("Kitchen profile saved");
         }, TOAST_DEBOUNCE);
       },
     }),
-    [profile, loading, error, user, showToast],
+    [profile, loading, error, user, showToast, flushQueue],
   );
 
   return <KitchenProfileContext.Provider value={value}>{children}</KitchenProfileContext.Provider>;
