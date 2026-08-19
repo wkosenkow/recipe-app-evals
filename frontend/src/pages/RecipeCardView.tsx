@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useResolvedBack } from "../lib/use-resolved-back";
 import { usePendingFavorite } from "../lib/use-pending-favorite";
-import Footer from "../components/Footer";
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import { toTagList } from "../types/mealdb";
@@ -117,16 +116,18 @@ function RecipeCardView() {
         {/* Sticky, because `mt-auto` alone only held these on screen while the
             recipe was short: a long ingredient list pushed the screen's whole
             purpose below the fold, and once the bottom bar existed they
-            scrolled underneath it. The offset lifts the row clear of that bar
-            on phones and drops to the viewport edge above 640px, where there
-            is no bar. `-mx-6 px-6` lets the divider reach the screen edges
+            scrolled underneath it. `bottom-0` and not an offset for the bar's
+            height: this container is itself the scrollport (`overflow-y-auto`),
+            and BottomNav's spacer already ends it above the bar — an offset
+            here counted that clearance a second time and left a 79px gap,
+            measured. `-mx-6 px-6` lets the divider reach the screen edges
             through the container's own padding.
 
             Links, not buttons: these are addressable screens now, so they
             should open in a new tab like every other link. `py-4` stays even
             though `.btn` has a 44px floor — that floor is coarse-pointer only,
             and without the padding these fall back to about 28px on desktop. */}
-        <div className="sticky bottom-[calc(56px+env(safe-area-inset-bottom))] z-[5] -mx-6 mt-auto flex gap-3 border-t border-neutral-800 bg-bg px-6 py-3 sm:bottom-0">
+        <div className="sticky bottom-0 z-[5] -mx-6 mt-auto flex gap-3 border-t border-neutral-800 bg-bg px-6 py-3">
           <Link to="recipe" className="btn btn-secondary flex-1 py-4">
             Recipe
           </Link>
@@ -143,8 +144,6 @@ function RecipeCardView() {
           </Link>
         </div>
       </div>
-
-      <Footer />
       <BottomNav />
     </div>
   );

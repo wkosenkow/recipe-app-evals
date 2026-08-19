@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
-import Footer from "../components/Footer";
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import RecipeCard from "../components/RecipeCard";
@@ -58,8 +57,6 @@ function FavoritesTab() {
             ))}
         </div>
       </div>
-
-      <Footer />
       <BottomNav />
     </div>
   );

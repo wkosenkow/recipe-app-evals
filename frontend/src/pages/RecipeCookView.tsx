@@ -3,7 +3,9 @@ import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { useResolvedBack } from "../lib/use-resolved-back";
+import BottomNav from "../components/BottomNav";
 import ChatView from "../components/ChatView";
+import Header from "../components/Header";
 import { useRecipe } from "./recipe-shared";
 
 function RecipeCookView() {
@@ -31,24 +33,36 @@ function RecipeCookView() {
   }
 
   return (
-    <div className="flex h-dvh flex-col p-6">
-      <button
-        type="button"
-        onClick={goBack}
-        className="mb-4 -mt-2 self-start py-2 text-[13px] text-neutral-400 hover:text-neutral-200"
-      >
-        ← Back to recipe
-      </button>
-      <ChatView
-        recipe={{
-          title: meal.strMeal,
-          cuisine: meal.strArea,
-          ingredients,
-          instructions: meal.strInstructions,
-        }}
-        kitchenProfile={profile}
-        mealId={meal.idMeal}
-      />
+    // `h-dvh` rather than `min-h-dvh`: this screen must not grow past the
+    // viewport, because the chat scrolls inside itself. With the header and
+    // the tab bar taking fixed bands off the top and bottom, `min-h-0` on the
+    // middle section is what allows it to shrink far enough for its own
+    // overflow to engage instead of pushing the compose row off screen.
+    <div className="flex h-dvh flex-col">
+      <Header />
+      {/* `pb-3` is not decoration: without it the compose row ends flush
+          against the tab bar's top edge — measured at a 1px overlap — and the
+          Send button's border disappears into it. */}
+      <div className="flex min-h-0 flex-1 flex-col px-6 pt-4 pb-3">
+        <button
+          type="button"
+          onClick={goBack}
+          className="mb-4 -mt-2 self-start py-2 text-[13px] text-neutral-400 hover:text-neutral-200"
+        >
+          ← Back to recipe
+        </button>
+        <ChatView
+          recipe={{
+            title: meal.strMeal,
+            cuisine: meal.strArea,
+            ingredients,
+            instructions: meal.strInstructions,
+          }}
+          kitchenProfile={profile}
+          mealId={meal.idMeal}
+        />
+      </div>
+      <BottomNav />
     </div>
   );
 }
