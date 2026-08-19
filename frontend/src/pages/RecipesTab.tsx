@@ -147,10 +147,26 @@ function RecipesTab() {
     <div className="flex min-h-dvh flex-col">
       <Header />
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+        {/* `type="search"` earns a native clear button, so wiping a query on a
+            phone is one tap instead of holding backspace. The rest is about
+            what iOS does to a plain text field: it capitalises the first
+            letter and autocorrects as you type, which mangles dish names —
+            "shchi" and "kofta" are not words it knows. Results update as you
+            type, so Enter has nothing to submit; blurring is the useful thing
+            it can do, since the keyboard is sitting on top of the results. */}
         <input
           className="input"
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
           placeholder="Search recipes…"
         />
 
@@ -158,8 +174,17 @@ function RecipesTab() {
           <div className="flex flex-col gap-3">
             <input
               className="input"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={cuisineQuery}
               onChange={(e) => setCuisineQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
               placeholder="Filter cuisines…"
             />
             {matchingAreas.length > 0 && (

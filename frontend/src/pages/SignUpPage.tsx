@@ -55,10 +55,17 @@ function SignUpPage() {
 
         <div className="field">
           <label htmlFor="signup-email">Email</label>
+          {/* Same keyboard treatment as the login screen — see the note
+              there. */}
           <input
             id="signup-email"
             className="input"
             type="email"
+            inputMode="email"
+            enterKeyHint="next"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
@@ -72,6 +79,7 @@ function SignUpPage() {
             id="signup-password"
             className="input"
             type="password"
+            enterKeyHint="go"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             // "new-password" rather than "current-password" is what tells a

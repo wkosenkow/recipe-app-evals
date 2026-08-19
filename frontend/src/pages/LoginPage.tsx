@@ -54,10 +54,18 @@ function LoginPage() {
 
         <div className="field">
           <label htmlFor="login-email">Email</label>
+          {/* `inputMode="email"` puts @ and . on the main layer of the phone
+              keyboard instead of behind a layout switch; the capitalisation
+              and autocorrect defaults would otherwise fight an address. */}
           <input
             id="login-email"
             className="input"
             type="email"
+            inputMode="email"
+            enterKeyHint="next"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             // Lets a password manager recognise the pair and offer the saved
@@ -69,10 +77,13 @@ function LoginPage() {
 
         <div className="field">
           <label htmlFor="login-password">Password</label>
+          {/* "go" rather than "next": this is the last field, and the key
+              submits the form. */}
           <input
             id="login-password"
             className="input"
             type="password"
+            enterKeyHint="go"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"

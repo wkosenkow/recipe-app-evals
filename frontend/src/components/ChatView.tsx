@@ -396,10 +396,14 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
             pinned to its bottom edge — the default stretch would pull it tall
             and thin along with the box instead. */}
         <div className="flex items-end gap-3">
+          {/* "send" labels the Enter key for what it actually does here. No
+              autocapitalise/autocorrect overrides: unlike the search box, this
+              is ordinary prose to a model that reads it as prose. */}
           <textarea
             ref={textareaRef}
             className="input min-h-[36px] max-h-[140px] flex-1 resize-none overflow-y-auto"
             rows={1}
+            enterKeyHint="send"
             maxLength={MAX_TURN_LENGTH}
             value={input}
             onChange={(event) => setInput(event.target.value)}
