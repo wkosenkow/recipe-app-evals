@@ -213,6 +213,27 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
     void runStream({}, () => {});
   };
 
+  /**
+   * Throws the saved conversation away and asks for a fresh walkthrough.
+   *
+   * A saved session is replayed verbatim, and it was written under whatever
+   * kitchen profile was in force at the time. Change the profile afterwards
+   * and the walkthrough on screen still reflects the old one — it reads as
+   * "my new settings were ignored", when in fact nothing was regenerated.
+   * Follow-up messages always carry the current profile, so only the existing
+   * turns are stale; this is the way to discard them.
+   */
+  const startOver = () => {
+    abortRef.current?.abort();
+    setMessages([]);
+    setStreamingText("");
+    setError(null);
+    // Clear the server's copy first, so a failure here doesn't leave the old
+    // transcript waiting to reappear on the next visit.
+    void saveCookingSession(mealId, []).catch(() => {});
+    requestOpening();
+  };
+
   // Resume a saved conversation instead of firing the opening walkthrough
   // again — `cancelled` guards against React StrictMode's dev-only double
   // mount firing this twice (the second run's cleanup sets it before the
@@ -321,6 +342,18 @@ function ChatView({ recipe, kitchenProfile, mealId }: ChatViewProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {/* Only once there is something to discard, and never mid-reply — the
+          walkthrough rewriting itself under the cook's eyes is not a state
+          worth offering. */}
+      {messages.length > 0 && !loading && (
+        <button
+          type="button"
+          onClick={startOver}
+          className="-my-1 self-end py-1 text-xs font-semibold text-neutral-400 hover:text-neutral-200"
+        >
+          Start over
+        </button>
+      )}
       <div className="relative flex min-h-0 flex-1 flex-col">
       {/* Announced politely, so a screen reader hears each finished turn. The
           text still streaming in below is deliberately excluded — announcing
