@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { usePendingFavorite } from "../lib/use-pending-favorite";
 import { filterMealsByArea, listAreas, searchMealsByName } from "../lib/mealdb";
-import Footer from "../components/Footer";
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import RecipeCard from "../components/RecipeCard";
@@ -234,8 +233,6 @@ function RecipesTab() {
           ))}
         </div>
       </div>
-
-      <Footer />
       <BottomNav />
     </div>
   );

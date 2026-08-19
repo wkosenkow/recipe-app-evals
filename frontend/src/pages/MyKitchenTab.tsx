@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useKitchenProfile } from "../context/KitchenProfileContext";
 import { type SkillLevel, type UnitSystem } from "../types/kitchen";
-import Footer from "../components/Footer";
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 
@@ -38,7 +37,6 @@ function MyKitchenTab() {
             </button>
           </div>
         </div>
-        <Footer />
         <BottomNav />
       </div>
     );
@@ -139,8 +137,6 @@ function MyKitchenTab() {
           </div>
         </div>
       </div>
-
-      <Footer />
       <BottomNav />
     </div>
   );

@@ -43,7 +43,12 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-8 p-6">
-      <Logo />
+      {/* This screen carries no header, so without this the mark is the only
+          thing on it and there's no way back into the app but the browser's
+          own back button. */}
+      <Link to="/" aria-label="Kitchen Companion — home">
+        <Logo />
+      </Link>
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-6">
         <h1 className="m-0 font-heading text-[20px] font-medium text-text">Log in</h1>
 
